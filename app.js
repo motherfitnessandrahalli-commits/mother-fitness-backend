@@ -1,5 +1,5 @@
 // ===================================
-// Mother Fitness - Application Logic
+// Ultra Fitness - Application Logic
 // ===================================
 
 // Customer Data Model
@@ -267,7 +267,7 @@ class GymApp {
 
     handleLogout() {
         this.api.logout();
-        sessionStorage.removeItem('motherFitnessAuth');
+        sessionStorage.removeItem('ultraFitnessAuth');
         window.location.reload();
     }
 
@@ -309,7 +309,7 @@ class GymApp {
 
     // Theme Management
     loadTheme() {
-        const savedTheme = localStorage.getItem('motherFitnessTheme');
+        const savedTheme = localStorage.getItem('ultraFitnessTheme');
         if (savedTheme) {
             this.currentTheme = savedTheme;
             if (savedTheme === 'light') {
@@ -332,7 +332,7 @@ class GymApp {
             text.textContent = this.currentTheme === 'light' ? 'Light Mode' : 'Dark Mode';
         }
 
-        localStorage.setItem('motherFitnessTheme', this.currentTheme);
+        localStorage.setItem('ultraFitnessTheme', this.currentTheme);
         this.showNotification('success', 'Theme Changed', `Switched to ${this.currentTheme} mode`);
     }
 
@@ -655,7 +655,7 @@ class GymApp {
                         to_name: customer.name,
                         plan_type: customer.plan,
                         expiry_date: new Date(customer.validity).toLocaleDateString('en-IN'),
-                        gym_name: 'Mother Fitness Gym'
+                        gym_name: 'Ultra Fitness Gym'
                     };
 
                     await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
@@ -777,7 +777,7 @@ class GymApp {
 
             // Generate filename with date
             const dateStr = new Date().toISOString().split('T')[0];
-            const fileName = `MotherFitness_Customers_${dateStr}.xlsx`;
+            const fileName = `UltraFitness_Customers_${dateStr}.xlsx`;
 
             // Save file
             XLSX.writeFile(wb, fileName);

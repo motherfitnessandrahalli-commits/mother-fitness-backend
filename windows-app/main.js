@@ -4,7 +4,7 @@ const createWindow = () => {
     const win = new BrowserWindow({
         width: 1280,
         height: 800,
-        title: "Mother Fitness Gym Management",
+        title: "Ultra Fitness Gym Management",
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true
@@ -13,11 +13,11 @@ const createWindow = () => {
     });
 
     // Load the deployed application
-    win.loadURL('https://mother-fitness-backend.onrender.com');
+    win.loadURL('https://ultra-fitness-backend.onrender.com');
 
     // Handle external links
     win.webContents.setWindowOpenHandler(({ url }) => {
-        if (url.startsWith('https://mother-fitness-backend.onrender.com')) {
+        if (url.startsWith('https://ultra-fitness-backend.onrender.com')) {
             return { action: 'allow' };
         }
         require('shell').openExternal(url);

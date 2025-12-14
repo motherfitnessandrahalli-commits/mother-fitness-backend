@@ -1,15 +1,15 @@
 {
-    "name": "mother-fitness-desktop",
+    "name": "ultra-fitness-desktop",
     "version": "1.0.0",
-    "description": "Mother Fitness Gym Management System Desktop App",
+    "description": "Ultra Fitness Gym Management System Desktop App",
     "main": "main.js",
     "scripts": {
         "start": "electron .",
         "dist": "electron-builder"
     },
     "author": {
-        "name": "Mother Fitness",
-        "email": "support@motherfitness.com"
+        "name": "Ultra Fitness",
+        "email": "support@ultrafitness.com"
     },
     "license": "ISC",
     "devDependencies": {
@@ -17,8 +17,8 @@
         "electron-builder": "^24.13.0"
     },
     "build": {
-        "appId": "com.motherfitness.manager",
-        "productName": "MotherFitness",
+        "appId": "com.ultrafitness.manager",
+        "productName": "UltraFitness",
         "win": {
             "target": "nsis"
         },
