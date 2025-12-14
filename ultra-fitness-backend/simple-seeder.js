@@ -15,8 +15,8 @@ const seed = async () => {
 
         console.log('Creating users...');
         const user = await User.create({
-            email: 'admin@ultrafitness.com',
-            password: '0000',
+            email: 'admin@motherfitness.com',
+            password: '111111',
             name: 'Admin User',
             role: 'admin'
         });

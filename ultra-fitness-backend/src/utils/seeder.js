@@ -6,8 +6,8 @@ const logger = require('../config/logger');
 // Sample data
 const sampleUsers = [
     {
-        email: 'admin@ultrafitness.com',
-        password: '0000',
+        email: 'admin@motherfitness.com',
+        password: '111111',
         name: 'Admin User',
         role: 'admin',
     },
@@ -120,7 +120,7 @@ const seedDatabase = async () => {
 
         logger.info('✅ Database seeded successfully!');
         logger.info('\nSample Login Credentials:');
-        logger.info('Admin - Email: admin@ultrafitness.com, Password: 0000');
+        logger.info('Admin - Email: admin@motherfitness.com, Password: 111111');
         logger.info('Staff - Email: staff@ultrafitness.com, Password: 0000');
 
         process.exit(0);
