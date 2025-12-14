@@ -12,7 +12,7 @@ const generatePaymentReceipt = (payment, customer) => {
     // Header with gym name
     doc.fontSize(24)
         .font('Helvetica-Bold')
-        .text('MOTHER FITNESS GYM', { align: 'center' })
+        .text('ULTRA FITNESS GYM', { align: 'center' })
         .moveDown(0.5);
 
     doc.fontSize(10)
@@ -85,8 +85,8 @@ const generatePaymentReceipt = (payment, customer) => {
     doc.fontSize(9)
         .font('Helvetica-Oblique')
         .text('Thank you for your payment!', 50, 650, { align: 'center' })
-        .text('Mother Fitness Gym', { align: 'center' })
-        .text('For any queries, contact us at support@motherfitness.com', { align: 'center' });
+        .text('Ultra Fitness Gym', { align: 'center' })
+        .text('For any queries, contact us at support@ultrafitness.com', { align: 'center' });
 
     // Finalize PDF
     doc.end();

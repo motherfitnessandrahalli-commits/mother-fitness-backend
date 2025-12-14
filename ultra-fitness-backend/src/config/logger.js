@@ -12,7 +12,7 @@ const logFormat = winston.format.combine(
 const logger = winston.createLogger({
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     format: logFormat,
-    defaultMeta: { service: 'mother-fitness-api' },
+    defaultMeta: { service: 'ultra-fitness-api' },
     transports: [
         // Write all logs to console
         new winston.transports.Console({

@@ -4,12 +4,12 @@ const options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Mother Fitness Gym API',
+            title: 'Ultra Fitness Gym API',
             version: '1.0.0',
-            description: 'RESTful API documentation for Mother Fitness Gym Management System',
+            description: 'RESTful API documentation for Ultra Fitness Gym Management System',
             contact: {
                 name: 'API Support',
-                email: 'support@motherfitness.com',
+                email: 'support@ultrafitness.com',
             },
         },
         servers: [
