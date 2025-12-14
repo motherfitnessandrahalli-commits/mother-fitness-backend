@@ -4,7 +4,7 @@
   "description": "RESTful API backend for Mother Fitness Gym Management System",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node src/utils/seeder.js && node server.js",
     "dev": "nodemon server.js",
     "seed": "node src/utils/seeder.js",
     "test": "cross-env NODE_ENV=test jest --runInBand --testTimeout=30000",
