@@ -1,0 +1,47 @@
+{
+  "./src/routes/analytics.routes.js": {
+    "status": "OK"
+  },
+  "./src/routes/announcement.routes.js": {
+    "status": "OK"
+  },
+  "./src/routes/attendance.routes.js": {
+    "status": "OK"
+  },
+  "./src/routes/auth.routes.js": {
+    "status": "OK"
+  },
+  "./src/routes/customer.routes.js": {
+    "status": "OK"
+  },
+  "./src/routes/member.routes.js": {
+    "status": "OK"
+  },
+  "./src/routes/notification.routes.js": {
+    "status": "OK"
+  },
+  "./src/routes/payment.routes.js": {
+    "status": "OK"
+  },
+  "./src/routes/upload.routes.js": {
+    "status": "OK"
+  },
+  "./src/models/Announcement.js": {
+    "status": "OK"
+  },
+  "./src/models/Attendance.js": {
+    "status": "OK"
+  },
+  "./src/models/Customer.js": {
+    "status": "OK"
+  },
+  "./src/models/index.js": {
+    "status": "OK"
+  },
+  "./src/models/Payment.js": {
+    "status": "OK"
+  },
+  "./src/models/User.js": {
+    "status": "OK"
+  }
+}
