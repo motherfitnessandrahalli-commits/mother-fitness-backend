@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra Fitness - Complete System Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: white;
+        }
+
+        /* Cover Page */
+        .cover-page {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+            color: white;
+            text-align: center;
+            page-break-after: always;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cover-page::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            top: -250px;
+            right: -250px;
+        }
+
+        .cover-page::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            bottom: -150px;
+            left: -150px;
+        }
+
+        .cover-logo {
+            font-size: 120px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .cover-page h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .cover-page .subtitle {
+            font-size: 1.8rem;
+            font-weight: 300;
+            margin-bottom: 40px;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cover-page .version {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-top: 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 60px;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 60px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 4px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-icon {
+            font-size: 2.5rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--secondary);
+            margin: 30px 0 20px;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 25px 0 15px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        /* Feature Cards */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .feature-description {
+            font-size: 1rem;
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        /* Info Boxes */
+        .info-box {
+            padding: 25px;
+            border-radius: 12px;
+            margin: 25px 0;
+            border-left: 5px solid;
+        }
+
+        .info-box.success {
+            background: #d1fae5;
+            border-color: var(--success);
+        }
+
+        .info-box.info {
+            background: #dbeafe;
+            border-color: var(--primary);
+        }
+
+        .info-box.warning {
+            background: #fef3c7;
+            border-color: var(--warning);
+        }
+
+        /* Tech Stack */
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .tech-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 2px solid #e2e8f0;
+        }
+
+        .tech-item .icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .tech-item .name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+
+        .tech-item .category {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        /* Workflow Steps */
+        .workflow-steps {
+            margin: 30px 0;
+        }
+
+        .workflow-step {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            min-width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+
+        .step-description {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: #f8fafc;
+            padding: 40px;
+            border-radius: 16px;
+            margin: 40px 0;
+        }
+
+        .toc h2 {
+            color: var(--primary);
+            margin-bottom: 25px;
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 1.1rem;
+        }
+
+        .toc li:last-child {
+            border-bottom: none;
+        }
+
+        .toc a {
+            color: var(--dark);
+            text-decoration: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toc a:hover {
+            color: var(--primary);
+        }
+
+        /* Mermaid Diagrams */
+        .mermaid {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+
+        /* Page Break */
+        .page-break {
+            page-break-after: always;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .container {
+                max-width: 100%;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .cover-page {
+                page-break-after: always;
+            }
+        }
+
+        /* Statistics Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border-top: 4px solid;
+        }
+
+        .stat-card.total {
+            border-color: var(--primary);
+        }
+
+        .stat-card.active {
+            border-color: var(--success);
+        }
+
+        .stat-card.expiring {
+            border-color: var(--warning);
+        }
+
+        .stat-card.expired {
+            border-color: var(--danger);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: #64748b;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Cover Page -->
+    <div class="cover-page">
+        <div class="cover-logo">💪</div>
+        <h1>Ultra Fitness</h1>
+        <p class="subtitle">Complete Gym Management System Guide</p>
+        <p class="version">Version 6.2 | December 2025</p>
+    </div>
+
+    <div class="container">
+        <!-- Table of Contents -->
+        <div class="toc page-break">
+            <h2>📋 Table of Contents</h2>
+            <ul>
+                <li><a href="#overview"><span>1. System Overview</span><span>→</span></a></li>
+                <li><a href="#features"><span>2. Key Features</span><span>→</span></a></li>
+                <li><a href="#architecture"><span>3. System Architecture</span><span>→</span></a></li>
+                <li><a href="#admin-portal"><span>4. Admin Portal</span><span>→</span></a></li>
+                <li><a href="#member-portal"><span>5. Member Portal</span><span>→</span></a></li>
+                <li><a href="#workflows"><span>6. How It Works</span><span>→</span></a></li>
+                <li><a href="#database"><span>7. Data Management</span><span>→</span></a></li>
+                <li><a href="#technology"><span>8. Technology Stack</span><span>→</span></a></li>
+            </ul>
+        </div>
+
+        <!-- Section 1: Overview -->
+        <div class="section" id="overview">
+            <h1 class="section-title"><span class="section-icon">🎯</span>System Overview</h1>
+
+            <p>Ultra Fitness is a comprehensive, cloud-based gym management system designed to streamline all aspects of
+                gym operations. The system consists of two main applications working together seamlessly:</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🖥️</div>
+                    <div class="feature-title">Admin Portal</div>
+                    <div class="feature-description">A powerful web dashboard for gym owners and staff to manage
+                        members, track attendance, record payments, and analyze business performance.</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <div class="feature-title">Member App (PWA)</div>
+                    <div class="feature-description">A mobile-friendly Progressive Web App that members can install on
+                        their phones to view their QR code, check attendance history, track payments, and calculate BMI.
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box success">
+                <h3>🎉 What Makes It Special?</h3>
+                <p><strong>All-in-One Solution:</strong> Everything your gym needs in one place - from member
+                    registration to attendance tracking to payment management.</p>
+                <p><strong>No Installation Required:</strong> Works directly in web browsers. Members can optionally
+                    install the app on their phones for easy access.</p>
+                <p><strong>Always Updated:</strong> Data syncs in real-time across all devices via cloud storage.</p>
+            </div>
+        </div>
+
+        <!-- Section 2: Key Features -->
+        <div class="section page-break" id="features">
+            <h1 class="section-title"><span class="section-icon">⭐</span>Key Features</h1>
+
+            <h2>For Gym Owners & Admin</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <div class="feature-title">Member Management</div>
+                    <div class="feature-description">Add, edit, and manage member profiles with photos, contact details,
+                        and membership plans</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📷</div>
+                    <div class="feature-title">QR Code Attendance</div>
+                    <div class="feature-description">Quick check-in system using QR codes - just scan and go!</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">💳</div>
+                    <div class="feature-title">Payment Tracking</div>
+                    <div class="feature-description">Record payments, track transaction history, and manage plan
+                        renewals</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-title">Analytics Dashboard</div>
+                    <div class="feature-description">Visual charts showing member growth, plan popularity, and age
+                        demographics</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📧</div>
+                    <div class="feature-title">Email Notifications</div>
+                    <div class="feature-description">Automatic email reminders for members with expiring memberships
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📤</div>
+                    <div class="feature-title">Excel Export/Import</div>
+                    <div class="feature-description">Export data to Excel for reports or import member data in bulk
+                    </div>
+                </div>
+            </div>
+
+            <h2>For Gym Members</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <div class="feature-title">Personal QR Code</div>
+                    <div class="feature-description">Your unique QR code for quick gym check-ins</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📅</div>
+                    <div class="feature-title">Attendance History</div>
+                    <div class="feature-description">View your complete gym visit history with dates and times</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <div class="feature-title">Payment Records</div>
+                    <div class="feature-description">Check your payment history and membership validity</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚖️</div>
+                    <div class="feature-title">BMI Calculator</div>
+                    <div class="feature-description">Track your Body Mass Index with personalized health tips</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: System Architecture -->
+        <div class="section page-break" id="architecture">
+            <h1 class="section-title"><span class="section-icon">🏗️</span>System Architecture</h1>
+
+            <p>The Ultra Fitness system uses a modern three-tier architecture:</p>
+
+            <div class="mermaid">
+                graph TB
+                subgraph "User Layer"
+                A1[🖥️ Admin Browser]
+                A2[📱 Member Phone/Browser]
+                end
+
+                subgraph "Application Layer"
+                B1[Admin Portal<br />Dashboard & Management]
+                B2[Member Portal<br />Personal App]
+                end
+
+                subgraph "Backend Layer"
+                C1[🔧 API Server<br />Node.js + Express]
+                C2[🔐 Authentication<br />JWT Tokens]
+                end
+
+                subgraph "Data Layer"
+                D1[(💾 MongoDB Database<br />Member & Transaction Data)]
+                D2[☁️ Cloudinary<br />Photo Storage]
+                end
+
+                A1 --> B1
+                A2 --> B2
+                B1 --> C1
+                B2 --> C1
+                C1 --> C2
+                C2 --> D1
+                C1 --> D2
+            </div>
+
+            <h2>How Data Flows Through the System</h2>
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">User Interaction</div>
+                        <div class="step-description">Admin or member performs an action (login, add member, scan QR,
+                            etc.)</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Application Processing</div>
+                        <div class="step-description">The web application validates the request and sends it to the
+                            backend server</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Server Processing</div>
+                        <div class="step-description">Backend server processes the request, applies business logic, and
+                            interacts with the database</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Data Storage</div>
+                        <div class="step-description">Information is saved to MongoDB (text data) or Cloudinary (photos)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Response</div>
+                        <div class="step-description">Server sends confirmation back to the application, which updates
+                            the display for the user</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Admin Portal -->
+        <div class="section page-break" id="admin-portal">
+            <h1 class="section-title"><span class="section-icon">🖥️</span>Admin Portal Guide</h1>
+
+            <h2>Dashboard Overview</h2>
+            <p>The admin dashboard is your command center for managing the gym. Here's what you'll see when you log in:
+            </p>
+
+            <h3>Statistics Cards</h3>
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value">150</div>
+                    <div class="stat-label">Total Members</div>
+                </div>
+
+                <div class="stat-card active">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value">120</div>
+                    <div class="stat-label">Active Plans</div>
+                </div>
+
+                <div class="stat-card expiring">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-value">15</div>
+                    <div class="stat-label">Expiring Soon</div>
+                </div>
+
+                <div class="stat-card expired">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-value">15</div>
+                    <div class="stat-label">Expired Plans</div>
+                </div>
+            </div>
+
+            <div class="info-box info">
+                <p><strong>Real-Time Updates:</strong> These statistics update automatically as you add members, record
+                    payments, or as memberships expire.</p>
+            </div>
+
+            <h2>Managing Members</h2>
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="step-number">➕</div>
+                    <div class="step-content">
+                        <div class="step-title">Adding New Members</div>
+                        <div class="step-description">
+                            Click "Add Customer" → Fill in member details (name, age, email, phone) → Choose membership
+                            plan → Take/upload photo → Save. The system automatically generates a unique Member ID and
+                            temporary password.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">✏️</div>
+                    <div class="step-content">
+                        <div class="step-title">Editing Member Info</div>
+                        <div class="step-description">
+                            Click the Edit button on any member card → Update any information → Save changes. All
+                            changes sync immediately to the member's app.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">💳</div>
+                    <div class="step-content">
+                        <div class="step-title">Recording Payments</div>
+                        <div class="step-description">
+                            Click the Payment button → Enter amount, payment method, and plan type → The system
+                            automatically calculates the new membership expiry date → Save to record the transaction.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2>QR Code Attendance System</h2>
+            <p>The QR code system makes check-ins fast and contactless:</p>
+
+            <div class="mermaid">
+                sequenceDiagram
+                participant M as Member
+                participant MA as Member App
+                participant A as Admin Portal
+                participant S as Server
+
+                M->>MA: Opens "My QR Code"
+                MA->>M: Shows QR Code
+                M->>A: Shows phone to admin
+                A->>A: Clicks "Scan QR"
+                A->>A: Camera scans code
+                A->>S: Send member ID
+                S->>S: Check membership status
+                alt Membership Active
+                S->>A: ✅ Confirm check-in
+                A->>A: Play success beep
+                A->>M: Welcome message
+                else Membership Expired
+                S->>A: ❌ Membership expired
+                A->>A: Play warning beep
+                A->>M: Renewal required
+                end
+            </div>
+
+            <h2>Search & Filter Options</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <div class="feature-title">Smart Search</div>
+                    <div class="feature-description">Search by name, email, or phone number to quickly find any member
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-title">Status Filters</div>
+                    <div class="feature-description">View only active members, those expiring soon, or expired
+                        memberships</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-title">Sorting Options</div>
+                    <div class="feature-description">Sort by name alphabetically, join date, or membership validity
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: Member Portal -->
+        <div class="section page-break" id="member-portal">
+            <h1 class="section-title"><span class="section-icon">📱</span>Member Portal Guide</h1>
+
+            <h2>What is a Progressive Web App (PWA)?</h2>
+            <div class="info-box info">
+                <p>The member portal is a <strong>Progressive Web App</strong> - a website that works like a mobile app!
+                    Members can:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>✅ Access it from any web browser</li>
+                    <li>✅ Install it on their phone's home screen (optional)</li>
+                    <li>✅ Use it offline for viewing saved data</li>
+                    <li>✅ Get app-like experience without downloading from app stores</li>
+                </ul>
+            </div>
+
+            <h2>Member Login Process</h2>
+            <div class="mermaid">
+                flowchart TD
+                Start([Member visits portal]) --> Login[Enter Member ID & Password]
+                Login --> Check{Valid credentials?}
+                Check -->|No| Error[Show error message]
+                Error --> Login
+                Check -->|Yes| First{First time login?}
+                First -->|Yes| Change[Must change password]
+                First -->|No| Dashboard[Member Dashboard]
+                Change --> Dashboard
+
+                Dashboard --> Features{Choose feature}
+                Features -->|QR Code| QR[Display QR for check-in]
+                Features -->|Attendance| Att[View visit history]
+                Features -->|Payments| Pay[View payment records]
+                Features -->|BMI| BMI[Calculate BMI]
+                Features -->|Profile| Prof[Update profile]
+            </div>
+
+            <h2>Dashboard Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <div class="feature-title">My QR Code</div>
+                    <div class="feature-description">Your personal QR code for gym check-ins. Can be downloaded for
+                        offline use.</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📅</div>
+                    <div class="feature-title">Attendance History</div>
+                    <div class="feature-description">See all your gym visits with dates and times. Filter by date range.
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <div class="feature-title">Payment History</div>
+                    <div class="feature-description">View all payment transactions, amounts, and membership validity
+                        dates.</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚖️</div>
+                    <div class="feature-title">BMI Calculator</div>
+                    <div class="feature-description">Calculate Body Mass Index with personalized health recommendations.
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <div class="feature-title">Profile Settings</div>
+                    <div class="feature-description">Update contact information and change password.</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🌙</div>
+                    <div class="feature-title">Dark Mode</div>
+                    <div class="feature-description">Toggle between light and dark themes for comfortable viewing.</div>
+                </div>
+            </div>
+
+            <h2>BMI Calculator</h2>
+            <p>The BMI calculator helps members track their health:</p>
+
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Choose Unit System</div>
+                        <div class="step-description">Select Metric (kg, cm) or Imperial (lbs, feet/inches)</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Enter Measurements</div>
+                        <div class="step-description">Input height and weight</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">View Results</div>
+                        <div class="step-description">See BMI value, category (Underweight/Normal/Overweight/Obese), and
+                            color-coded health indicator</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Get Health Tips</div>
+                        <div class="step-description">Receive personalized recommendations based on your BMI category
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 6: Workflows -->
+        <div class="section page-break" id="workflows">
+            <h1 class="section-title"><span class="section-icon">🔄</span>How It Works - Complete Workflows</h1>
+
+            <h2>Complete Check-In Flow</h2>
+            <div class="mermaid">
+                flowchart TD
+                Start([Member arrives at gym]) --> HasApp{Has member app?}
+                HasApp -->|Yes| OpenApp[Opens app on phone]
+                HasApp -->|No| AskAdmin[Asks admin for help]
+
+                OpenApp --> ShowQR[Shows QR code to admin]
+                AskAdmin --> AdminLookup[Admin looks up member]
+                AdminLookup --> AdminQR[Admin shows member's QR]
+
+                ShowQR --> Scan[Admin scans QR code]
+                AdminQR --> Scan
+
+                Scan --> CheckStatus{Check membership}
+
+                CheckStatus -->|Active| Success[✅ Check-in successful]
+                CheckStatus -->|Expired| Warning[❌ Membership expired]
+
+                Success --> Record[Record attendance in database]
+                Success --> Beep1[Play success sound]
+                Success --> Welcome[Show welcome message]
+
+                Warning --> Beep2[Play warning sound]
+                Warning --> Renewal[Suggest renewal]
+
+                Record --> End([Complete])
+                Welcome --> End
+                Renewal --> End
+            </div>
+
+            <h2>Payment & Renewal Process</h2>
+            <div class="mermaid">
+                flowchart TD
+                Start([Member wants to renew]) --> Admin[Admin opens payment form]
+                Admin --> Select[Select member from list]
+                Select --> Form[Fill payment details]
+
+                Form --> Amount[Enter amount]
+                Amount --> Plan[Choose plan type]
+                Plan --> Method[Select payment method]
+                Method --> Date[Set payment date]
+
+                Date --> Calculate{System calculates<br />new expiry date}
+
+                Calculate -->|Monthly| Add30[Add 30 days]
+                Calculate -->|Quarterly| Add90[Add 90 days]
+                Calculate -->|Half-Yearly| Add180[Add 180 days]
+                Calculate -->|Yearly| Add365[Add 365 days]
+
+                Add30 --> Save[Save payment record]
+                Add90 --> Save
+                Add180 --> Save
+                Add365 --> Save
+
+                Save --> UpdateDB[Update member's validity]
+                UpdateDB --> UpdateUI[Update dashboard]
+                UpdateUI --> Notify[Show success notification]
+                Notify --> SyncApp[Sync to member app]
+                SyncApp --> End([Complete])
+            </div>
+
+            <h2>New Member Registration</h2>
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Collect Information</div>
+                        <div class="step-description">Admin gathers member's basic details: full name, age, email
+                            address, phone number</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Take Photo</div>
+                        <div class="step-description">Click "Take Photo" to capture member's picture using webcam or
+                            upload existing photo</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Choose Plan</div>
+                        <div class="step-description">Select membership plan (Monthly, Quarterly, Half-Yearly, or
+                            Yearly) and set start date</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">System Generates Credentials</div>
+                        <div class="step-description">System automatically creates a unique Member ID (e.g., U001, U002)
+                            and temporary password (default: member's 4-digit phone number)</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Save & Notify</div>
+                        <div class="step-description">Click Save → System shows notification with Member ID and password
+                            → Share these credentials with the new member</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">Member First Login</div>
+                        <div class="step-description">Member logs into their app using provided credentials → System
+                            forces password change on first login for security</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 7: Database -->
+        <div class="section page-break" id="database">
+            <h1 class="section-title"><span class="section-icon">💾</span>Data Management</h1>
+
+            <h2>How Your Data is Organized</h2>
+            <p>The system stores information in three main categories (called "collections" in database terms):</p>
+
+            <div class="mermaid">
+                erDiagram
+                CUSTOMER ||--o{ ATTENDANCE : "has many"
+                CUSTOMER ||--o{ PAYMENT : "has many"
+
+                CUSTOMER {
+                string MemberID
+                string Name
+                string Email
+                string Phone
+                number Age
+                string Plan
+                date ValidityDate
+                string Photo
+                string Password
+                }
+
+                ATTENDANCE {
+                string MemberID
+                date CheckInDate
+                time CheckInTime
+                string Status
+                }
+
+                PAYMENT {
+                string MemberID
+                number Amount
+                string PlanType
+                date PaymentDate
+                string Method
+                }
+            </div>
+
+            <h2>Data Categories Explained</h2>
+
+            <h3>1. Member Information (CUSTOMER)</h3>
+            <div class="info-box info">
+                <p><strong>What it stores:</strong> All basic information about each gym member</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Member ID:</strong> Unique identifier (U001, U002, etc.)</li>
+                    <li><strong>Personal Details:</strong> Name, age, email, phone number</li>
+                    <li><strong>Membership Info:</strong> Current plan type, expiry date</li>
+                    <li><strong>Photo:</strong> Profile picture stored in cloud storage</li>
+                    <li><strong>Security:</strong> Encrypted password for app login</li>
+                </ul>
+            </div>
+
+            <h3>2. Attendance Records (ATTENDANCE)</h3>
+            <div class="info-box success">
+                <p><strong>What it stores:</strong> Every gym check-in for every member</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Who:</strong> Which member checked in (linked to Member ID)</li>
+                    <li><strong>When:</strong> Exact date and time of check-in</li>
+                    <li><strong>Status:</strong> Whether membership was active, expiring, or expired at check-in time
+                    </li>
+                    <li><strong>Prevention:</strong> System prevents duplicate check-ins on the same day</li>
+                </ul>
+            </div>
+
+            <h3>3. Payment History (PAYMENT)</h3>
+            <div class="info-box warning">
+                <p><strong>What it stores:</strong> All financial transactions</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Transaction Details:</strong> Amount paid, payment method (Cash, UPI, Card, etc.)</li>
+                    <li><strong>Plan Information:</strong> Which membership plan was purchased</li>
+                    <li><strong>Dates:</strong> When payment was made</li>
+                    <li><strong>Notes:</strong> Any additional information about the payment</li>
+                </ul>
+            </div>
+
+            <h2>Data Relationships</h2>
+            <p>Think of it like a filing system:</p>
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="step-number">👤</div>
+                    <div class="step-content">
+                        <div class="step-title">Each Member Has a File</div>
+                        <div class="step-description">The main member record is like the folder label with basic info
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">📄</div>
+                    <div class="step-content">
+                        <div class="step-title">Attendance Sheets Inside</div>
+                        <div class="step-description">Each check-in is like a page in their attendance sheet, all linked
+                            to their Member ID</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">🧾</div>
+                    <div class="step-content">
+                        <div class="step-title">Payment Receipts Attached</div>
+                        <div class="step-description">Each payment creates a receipt, also linked to their Member ID
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2>Data Security</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
+                    <div class="feature-title">Password Encryption</div>
+                    <div class="feature-description">All passwords are encrypted using bcrypt - even administrators
+                        cannot see actual passwords</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <div class="feature-title">Secure API</div>
+                    <div class="feature-description">All data transfers use HTTPS encryption and JWT authentication
+                        tokens</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">☁️</div>
+                    <div class="feature-title">Cloud Backup</div>
+                    <div class="feature-description">Data is stored on MongoDB Atlas with automatic backups and 99.9%
+                        uptime</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🖼️</div>
+                    <div class="feature-title">Secure Photos</div>
+                    <div class="feature-description">Images stored on Cloudinary with secure CDN delivery</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 8: Technology -->
+        <div class="section page-break" id="technology">
+            <h1 class="section-title"><span class="section-icon">⚙️</span>Technology Stack</h1>
+
+            <p>Ultra Fitness is built using modern, reliable technologies. Here's what powers the system (explained in
+                simple terms):</p>
+
+            <h2>Frontend Technologies (What You See)</h2>
+            <div class="tech-stack">
+                <div class="tech-item">
+                    <div class="icon">🌐</div>
+                    <div class="name">HTML5</div>
+                    <div class="category">Page Structure</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">🎨</div>
+                    <div class="name">CSS3</div>
+                    <div class="category">Visual Design</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">⚡</div>
+                    <div class="name">JavaScript</div>
+                    <div class="category">Interactivity</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">📱</div>
+                    <div class="name">PWA</div>
+                    <div class="category">Mobile App Features</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">📊</div>
+                    <div class="name">Chart.js</div>
+                    <div class="category">Analytics Graphs</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">📷</div>
+                    <div class="name">QRCode.js</div>
+                    <div class="category">QR Code Generation</div>
+                </div>
+            </div>
+
+            <h2>Backend Technologies (Behind the Scenes)</h2>
+            <div class="tech-stack">
+                <div class="tech-item">
+                    <div class="icon">🟢</div>
+                    <div class="name">Node.js</div>
+                    <div class="category">Server Runtime</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">🚂</div>
+                    <div class="name">Express.js</div>
+                    <div class="category">Web Framework</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">🍃</div>
+                    <div class="name">MongoDB</div>
+                    <div class="category">Database</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">🔐</div>
+                    <div class="name">JWT</div>
+                    <div class="category">Authentication</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">☁️</div>
+                    <div class="name">Cloudinary</div>
+                    <div class="category">Image Storage</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">📧</div>
+                    <div class="name">EmailJS</div>
+                    <div class="category">Email Notifications</div>
+                </div>
+            </div>
+
+            <h2>Deployment (Where It Lives)</h2>
+            <div class="tech-stack">
+                <div class="tech-item">
+                    <div class="icon">🚀</div>
+                    <div class="name">Render.com</div>
+                    <div class="category">Backend Hosting</div>
+                </div>
+
+                <div class="tech-item">
+                    <div class="icon">🌍</div>
+                    <div class="name">MongoDB Atlas</div>
+                    <div class="category">Cloud Database</div>
+                </div>
+            </div>
+
+            <h2>Technology Explained (For Non-Technical Users)</h2>
+
+            <div class="info-box info">
+                <h3>What is Node.js?</h3>
+                <p>Think of it as the engine that powers the backend server. It handles all the requests from the admin
+                    portal and member app, processes them, and sends back responses.</p>
+            </div>
+
+            <div class="info-box success">
+                <h3>What is MongoDB?</h3>
+                <p>This is like a digital filing cabinet where all your data is stored - member information, attendance
+                    records, payment history, etc. It's hosted in the cloud, so it's accessible 24/7 from anywhere.</p>
+            </div>
+
+            <div class="info-box warning">
+                <h3>What is JWT (JSON Web Token)?</h3>
+                <p>Think of it as a digital ID card. When you log in, the system gives you this token, and you present
+                    it with every request to prove who you are. It's more secure than traditional sessions.</p>
+            </div>
+
+            <h2>Why These Technologies?</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-title">Fast Performance</div>
+                    <div class="feature-description">Node.js and MongoDB are designed for speed, handling thousands of
+                        requests efficiently</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📈</div>
+                    <div class="feature-title">Scalable</div>
+                    <div class="feature-description">Can easily grow from 100 members to 10,000+ without major changes
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <div class="feature-title">Secure</div>
+                    <div class="feature-description">Industry-standard security practices with encryption and
+                        authentication</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <div class="feature-title">Cost-Effective</div>
+                    <div class="feature-description">Free tier hosting options available, paid plans are affordable
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <div class="feature-title">Cross-Platform</div>
+                    <div class="feature-description">Works on all devices - computers, tablets, smartphones</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <div class="feature-title">Maintainable</div>
+                    <div class="feature-description">Well-documented code that's easy to update and enhance</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final Section: Summary -->
+        <div class="section page-break">
+            <h1 class="section-title"><span class="section-icon">🎯</span>Summary</h1>
+
+            <h2>What Ultra Fitness Does</h2>
+            <p>Ultra Fitness is a complete gym management solution that automates and simplifies every aspect of running
+                a gym:</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">✅</div>
+                    <div class="feature-title">For Gym Owners</div>
+                    <div class="feature-description">Manage members, track attendance, record payments, view analytics -
+                        all from one dashboard</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">✅</div>
+                    <div class="feature-title">For Members</div>
+                    <div class="feature-description">Easy check-ins with QR code, view attendance and payment history,
+                        track fitness metrics</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">✅</div>
+                    <div class="feature-title">For Everyone</div>
+                    <div class="feature-description">Fast, secure, reliable, and accessible from any device with
+                        internet connection</div>
+                </div>
+            </div>
+
+            <h2>Key Benefits</h2>
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="step-number">⏱️</div>
+                    <div class="step-content">
+                        <div class="step-title">Saves Time</div>
+                        <div class="step-description">Automated attendance, instant payment recording, quick member
+                            lookup</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">📊</div>
+                    <div class="step-content">
+                        <div class="step-title">Better Insights</div>
+                        <div class="step-description">Visual analytics show business trends, popular plans, peak hours
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">🔒</div>
+                    <div class="step-content">
+                        <div class="step-title">Secure Data</div>
+                        <div class="step-description">Cloud backups, encrypted passwords, secure file storage</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">📱</div>
+                    <div class="step-content">
+                        <div class="step-title">Mobile-Friendly</div>
+                        <div class="step-description">Works on phones, tablets, computers - members can access anywhere
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">💪</div>
+                    <div class="step-content">
+                        <div class="step-title">Professional Image</div>
+                        <div class="step-description">Modern, polished system impresses members and streamlines
+                            operations</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box success" style="margin-top: 40px;">
+                <h3>🎉 Ready to Transform Your Gym Management?</h3>
+                <p>Ultra Fitness Gym Management System brings professional, enterprise-level management tools to gyms of
+                    all sizes. Whether you have 10 members or 1,000, the system scales with your business.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#6366f1',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#6366f1',
+                lineColor: '#8b5cf6',
+                secondaryColor: '#8b5cf6',
+                tertiaryColor: '#ec4899'
+            }
+        });
+    </script>
+</body>
+
+</html>

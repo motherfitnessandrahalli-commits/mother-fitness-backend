@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6c5ce7">
+    <meta name="description" content="Mother Fitness Gym Member App">
+    <title>Member Login - Mother Fitness</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo">
+                <h1>💪 Mother Fitness</h1>
+                <p>Member Portal</p>
+            </div>
+
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="memberId">Member ID</label>
+                    <input type="text" id="memberId" placeholder="U001" required autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter password" required>
+                </div>
+
+                <button type="submit" class="btn-primary" id="loginBtn">
+                    <span class="btn-text">Login</span>
+                    <span class="btn-loader" style="display: none;">Logging in...</span>
+                </button>
+
+                <div id="error-message" class="error-message" style="display: none;"></div>
+            </form>
+
+            <div class="login-footer">
+                <p>Contact admin for login issues</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="./api.js"></script>
+    <script>
+        const api = new MemberAPI();
+
+        // Check if already logged in
+        if (api.token) {
+            window.location.href = './dashboard.html';
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const memberId = document.getElementById('memberId').value.trim();
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-message');
+            const loginBtn = document.getElementById('loginBtn');
+            const btnText = loginBtn.querySelector('.btn-text');
+            const btnLoader = loginBtn.querySelector('.btn-loader');
+
+            // Clear previous error
+            errorDiv.style.display = 'none';
+
+            // Show loading
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'inline';
+            loginBtn.disabled = true;
+
+            try {
+                const response = await api.login(memberId, password);
+
+                // Check if first login
+                if (response.data.isFirstLogin) {
+                    // Store member info for password change
+                    sessionStorage.setItem('isFirstLogin', 'true');
+                }
+
+                // Redirect to dashboard
+                window.location.href = './dashboard.html';
+            } catch (error) {
+                errorDiv.textContent = error.message || 'Login failed. Please check your credentials.';
+                errorDiv.style.display = 'block';
+
+                // Reset button
+                btnText.style.display = 'inline';
+                btnLoader.style.display = 'none';
+                loginBtn.disabled = false;
+            }
+        });
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.error('Service Worker error:', err));
+        }
+    </script>
+</body>
+
+</html>

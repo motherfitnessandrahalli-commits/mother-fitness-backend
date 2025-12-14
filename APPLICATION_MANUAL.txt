@@ -1,0 +1,88 @@
+==============================================================================
+ULTRA FITNESS - GYM MANAGEMENT SYSTEM
+User Manual & Feature Guide
+==============================================================================
+
+Welcome to the Ultra Fitness Gym Management System! This application is designed
+to help you efficiently manage your gym members, track memberships, and analyze
+business performance.
+
+==============================================================================
+KEY FEATURES
+==============================================================================
+
+1. DASHBOARD OVERVIEW
+   - Real-time statistics at the top of the screen.
+   - View Total Customers, Active Plans, Expiring Soon (within 7 days), and
+     Expired Plans instantly.
+
+2. CUSTOMER MANAGEMENT
+   - Add New Customer: Capture personal details, plan type, and validity.
+   - Edit Customer: Update details for existing members.
+   - Delete Customer: Remove members who have left the gym.
+   - Profile Photos: Upload images or take live photos using your device's camera.
+
+3. SMART SEARCH & FILTERS
+   - Search Bar: Instantly find customers by Name, Email, or Phone Number.
+   - Status Filters: View only Active, Expiring, or Expired customers.
+   - Sorting: Sort the list by Name, Newest First, Oldest First, or Plan Validity.
+
+4. ANALYTICS DASHBOARD (NEW!)
+   - Click the "Analytics" button in the header to switch views.
+   - Plan Popularity: Pie chart showing which membership plans are most chosen.
+   - Age Demographics: Bar chart showing the age distribution of your members.
+   - Business Growth: Line chart tracking new member sign-ups over the last 6 months.
+
+5. AUTOMATED NOTIFICATIONS
+   - In-App Alerts: Get visual confirmation for all actions (Adds, Edits, Deletes).
+   - Expiry Warnings: The system automatically highlights expiring and expired plans.
+   - Email Notifications: One-click "Notify All Expired" button to send personalized
+     email reminders to all customers with expired plans (powered by EmailJS).
+
+6. DARK/LIGHT MODE
+   - Toggle between a sleek Dark Mode (default) and a bright Light Mode using the
+     moon/sun icon in the header.
+45: 
+46: 7. QR CODE ATTENDANCE SYSTEM (NEW!)
+47:    - Generate unique QR codes for every member.
+48:    - Scan QR codes at the gym entrance to mark daily attendance.
+49:    - Audio Alerts: 
+50:      * Short Beep = Active Membership
+51:      * Long Beep + Voice Alert = Expired Membership
+52:    - Attendance Dashboard: View daily check-ins and export attendance logs to Excel.
+
+45: 
+46: 7. QR CODE ATTENDANCE SYSTEM (NEW!)
+47:    - Generate unique QR codes for every member.
+48:    - Scan QR codes at the gym entrance to mark daily attendance.
+49:    - Audio Alerts: 
+50:      * Short Beep = Active Membership
+51:      * Long Beep + Voice Alert = Expired Membership
+52:    - Attendance Dashboard: View daily check-ins and export attendance logs to Excel.
+53: 
+54: ==============================================================================
+HOW TO USE
+==============================================================================
+
+--- ADDING A CUSTOMER ---
+1. Click the "+ Add Customer" button in the top right.
+2. Fill in the required details (Name, Age, Email, Phone).
+3. Select a Plan Type (Monthly, Quarterly, etc.). The validity date will
+   auto-calculate based on your selection.
+4. (Optional) Add a profile photo:
+   - Click "Take Photo" to use your webcam/camera.
+   - Or click the camera icon to upload a file.
+5. Click "Save Customer".
+
+--- MANAGING PHOTOS ---
+- To view a photo larger, click on the customer's profile picture in the list.
+- In the view modal, you can choose to "Edit Photo" or "Delete Photo".
+
+--- SENDING EXPIRY REMINDERS ---
+1. If there are expired customers, a "Notify All Expired" button will appear
+   next to the filters.
+2. Click this button to send emails to all expired members.
+- The application uses Chart.js for analytics and EmailJS for email services.
+- Optimized for both Desktop and Mobile devices.
+
+==============================================================================
