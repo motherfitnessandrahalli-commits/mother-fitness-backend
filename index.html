@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mother Fitness - Gym Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-card">
+            <div class="login-icon">🔒</div>
+            <h2 class="login-title">Welcome Back</h2>
+            <p class="login-subtitle">Please enter your password to access the system.</p>
+            <div id="login-error" class="login-error"></div>
+            <form id="login-form" class="login-form">
+                <input type="email" id="login-email" class="login-input" placeholder="admin@motherfitness.com" required>
+                <input type="password" id="login-password" class="login-input" placeholder="••••" required>
+                <button type="submit" class="btn login-btn">Login</button>
+            </form>
+            <p class="login-footer">
+                Default: admin@motherfitness.com / 0000
+            </p>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">💪</div>
+                    <h1>Mother Fitness</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary btn-icon-only" id="hamburger-btn">
+                        <span class="hamburger-icon">☰</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Dashboard Stats -->
+            <section class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-icon total">👥</div>
+                    <div class="stat-info">
+                        <h3 id="total-customers">0</h3>
+                        <p>Total Customers</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon active">✅</div>
+                    <div class="stat-info">
+                        <h3 id="active-customers">0</h3>
+                        <p>Active Plans</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon expiring">⚠️</div>
+                    <div class="stat-info">
+                        <h3 id="expiring-customers">0</h3>
+                        <p>Expiring Soon</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon expired">❌</div>
+                    <div class="stat-info">
+                        <h3 id="expired-customers">0</h3>
+                        <p>Expired Plans</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Search and Filter Section -->
+            <section class="controls-section">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="search-input" placeholder="Search by name, email, or phone...">
+                </div>
+                <div class="filter-controls">
+                    <button id="notify-expired-btn" class="btn btn-warning" style="display: none;">
+                        <span class="btn-icon">📧</span>
+                        Notify All Expired
+                    </button>
+                    <button id="sync-badges-btn" class="btn btn-secondary" onclick="app.syncBadges()">
+                        <span class="btn-icon">🏆</span>
+                        Sync Badges
+                    </button>
+                    <select id="filter-status" class="filter-select">
+                        <option value="all">All Customers</option>
+                        <option value="active">Active Plans</option>
+                        <option value="expiring">Expiring Soon (7 days)</option>
+                        <option value="expired">Expired Plans</option>
+                    </select>
+                    <select id="sort-by" class="filter-select">
+                        <option value="name">Sort by Name</option>
+                        <option value="date-newest">Newest First</option>
+                        <option value="date-oldest">Oldest First</option>
+                        <option value="validity">Plan Validity</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Customer List -->
+            <section class="customer-list-section">
+                <div id="customer-list" class="customer-list">
+                    <!-- Customer cards will be dynamically inserted here -->
+                </div>
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <h2>No Customers Found</h2>
+                    <p>Start by adding your first customer to the system</p>
+                    <button class="btn btn-primary" onclick="openCustomerModal()">
+                        <span class="btn-icon">+</span>
+                        Add First Customer
+                    </button>
+                </div>
+            </section>
+
+            <!-- Analytics Dashboard (Hidden by default) -->
+            <section id="analytics-dashboard" class="analytics-dashboard" style="display: none;">
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Plan Popularity</h3>
+                        <div class="chart-container">
+                            <canvas id="planChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Customer Age Demographics</h3>
+                        <div class="chart-container">
+                            <canvas id="ageChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card full-width">
+                        <h3>Business Growth (New Customers)</h3>
+                        <div class="chart-container">
+                            <canvas id="growthChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Attendance Dashboard (Hidden by default) -->
+            <section id="attendance-dashboard" class="attendance-dashboard" style="display: none;">
+                <div class="attendance-header">
+                    <h2>📋 Attendance Tracker</h2>
+                    <div class="attendance-controls">
+                        <input type="date" id="attendance-date-filter" class="filter-select">
+                        <button class="btn btn-success" id="export-attendance-btn">
+                            <span class="btn-icon">📥</span>
+                            Export Attendance
+                        </button>
+                    </div>
+                </div>
+
+                <div class="attendance-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon total">✅</div>
+                        <div class="stat-info">
+                            <h3 id="today-checkins">0</h3>
+                            <p>Today's Check-ins</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon active">🟢</div>
+                        <div class="stat-info">
+                            <h3 id="active-checkins">0</h3>
+                            <p>Active Members</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon expired">🔴</div>
+                        <div class="stat-info">
+                            <h3 id="expired-checkins">0</h3>
+                            <p>Expired Members</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="attendance-list-section">
+                    <h3>Check-in Records</h3>
+                    <div id="attendance-list" class="attendance-list">
+                        <!-- Attendance records will be dynamically inserted here -->
+                    </div>
+                    <div id="attendance-empty-state" class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h2>No Check-ins Yet</h2>
+                        <p>Scan QR codes to mark attendance</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Customer Modal -->
+    <div id="customer-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Add New Customer</h2>
+                <button class="close-btn" onclick="closeCustomerModal()">&times;</button>
+            </div>
+            <form id="customer-form">
+                <!-- Profile Photo Section -->
+                <div class="profile-photo-section">
+                    <div class="profile-photo-container">
+                        <div class="profile-photo-preview" id="profile-photo-preview">
+                            <img id="profile-image" src="" alt="Profile Photo" style="display: none;">
+                            <div class="profile-placeholder" id="profile-placeholder">
+                                <span class="placeholder-icon">📷</span>
+                                <span class="placeholder-text">Add Photo</span>
+                            </div>
+                        </div>
+                        <input type="file" id="profile-photo-input" accept="image/*" capture="user"
+                            style="display: none;">
+                        <button type="button" class="btn btn-secondary btn-camera" id="add-photo-btn">
+                            <span class="btn-icon">📷</span>
+                            Take Photo
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="customer-name">Full Name *</label>
+                        <input type="text" id="customer-name" required placeholder="Enter full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="customer-age">Age *</label>
+                        <input type="number" id="customer-age" required min="10" max="120" placeholder="Enter age">
+                    </div>
+                    <div class="form-group">
+                        <label for="customer-email">Email Address *</label>
+                        <input type="email" id="customer-email" required placeholder="email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="customer-phone">Phone Number *</label>
+                        <input type="tel" id="customer-phone" required placeholder="+91 XXXXX XXXXX">
+                    </div>
+                    <div class="form-group">
+                        <label for="customer-plan">Plan Type *</label>
+                        <select id="customer-plan" class="ios-select" required>
+                            <option value="">Select Plan</option>
+                            <option value="Monthly">Monthly</option>
+                            <option value="Quarterly">Quarterly (3 Months)</option>
+                            <option value="Half-Yearly">Half-Yearly (6 Months)</option>
+                            <option value="Yearly">Yearly (12 Months)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="customer-validity">Plan Validity (End Date) *</label>
+                        <input type="date" id="customer-validity" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="customer-notes">Additional Notes</label>
+                    <textarea id="customer-notes" rows="3" placeholder="Any additional information..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCustomerModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submit-btn">
+                        <span class="btn-icon">💾</span>
+                        Save Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Confirm Delete</h2>
+                <button class="close-btn" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="delete-customer-name"></strong>?</p>
+                <p class="warning-text">This action cannot be undone.</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn">
+                    <span class="btn-icon">🗑️</span>
+                    Delete Customer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Enlargement Modal -->
+    <div id="image-modal" class="modal">
+        <div class="modal-content modal-image">
+            <div class="modal-header">
+                <h2>Profile Photo</h2>
+                <button class="close-btn" onclick="app.closeImageModal()">&times;</button>
+            </div>
+            <div class="modal-body modal-image-body">
+                <img id="enlarged-image" src="" alt="Profile Photo">
+            </div>
+            <div class="modal-actions" style="display: none;">
+                <button type="button" class="btn btn-secondary" id="edit-photo-btn">
+                    <span class="btn-icon">✏️</span>
+                    Edit Photo
+                </button>
+                <button type="button" class="btn btn-danger" id="delete-photo-btn">
+                    <span class="btn-icon">🗑️</span>
+                    Delete Photo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div id="camera-modal" class="modal">
+        <div class="modal-content modal-camera">
+            <div class="modal-header">
+                <h2>Take Photo</h2>
+                <button class="close-btn" onclick="app.closeCameraModal()">×</button>
+            </div>
+            <div class="modal-body camera-body">
+                <video id="camera-video" autoplay playsinline></video>
+                <canvas id="camera-canvas" style="display: none;"></canvas>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeCameraModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="capture-photo-btn">
+                    <span class="btn-icon">📸</span>
+                    Capture Photo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="password-modal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Change Password</h2>
+                <button class="close-btn" onclick="closePasswordModal()">&times;</button>
+            </div>
+            <form id="password-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="current-password">Current Password</label>
+                        <input type="password" id="current-password" required placeholder="Enter current password">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">New Password</label>
+                        <input type="password" id="new-password" required placeholder="Enter new password">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">Confirm New Password</label>
+                        <input type="password" id="confirm-password" required placeholder="Confirm new password">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR Code Display Modal -->
+    <div id="qr-modal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Member QR Code</h2>
+                <button class="close-btn" onclick="closeQRModal()">&times;</button>
+            </div>
+            <div class="modal-body qr-modal-body">
+                <div class="qr-customer-info">
+                    <h3 id="qr-customer-name"></h3>
+                    <p id="qr-customer-plan"></p>
+                </div>
+                <div id="qr-code-container" class="qr-code-container"></div>
+                <p class="qr-instructions">Scan this QR code at the gym entrance to mark attendance</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeQRModal()">Close</button>
+                <button type="button" class="btn btn-primary" id="download-qr-btn">
+                    <span class="btn-icon">📥</span>
+                    Download QR Code
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="scanner-modal" class="modal">
+        <div class="modal-content modal-scanner">
+            <div class="modal-header">
+                <h2>📷 Scan Member QR Code</h2>
+                <button class="close-btn" onclick="closeScannerModal()">&times;</button>
+            </div>
+            <div class="modal-body scanner-body">
+                <div id="qr-reader" class="qr-reader"></div>
+                <div class="scanner-instructions">
+                    <p>📱 Position the QR code within the frame</p>
+                    <p>🎯 Scanner will automatically detect and process</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Success Modal -->
+    <div id="attendance-success-modal" class="modal">
+        <div class="modal-content modal-small attendance-success-content">
+            <div class="modal-body">
+                <div class="success-animation" id="success-animation">
+                    <div class="success-icon">✅</div>
+                </div>
+                <h2 id="attendance-member-name"></h2>
+                <div class="attendance-status-badge" id="attendance-status-badge"></div>
+                <p class="attendance-time" id="attendance-time"></p>
+                <p class="attendance-message" id="attendance-message"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hamburger Menu Backdrop -->
+    <div id="hamburger-backdrop" class="hamburger-backdrop" onclick="closeHamburgerMenu()"></div>
+
+    <!-- Hamburger Menu -->
+    <div id="hamburger-menu" class="hamburger-menu">
+        <div class="hamburger-menu-content">
+            <div class="hamburger-menu-header">
+                <h3>Menu</h3>
+                <button class="hamburger-close" onclick="closeHamburgerMenu()">×</button>
+            </div>
+            <div class="hamburger-menu-nav">
+                <div class="menu-item" id="menu-add-customer-btn">
+                    <span class="menu-icon">👤</span>
+                    <span class="menu-text">Add Customer</span>
+                </div>
+
+                <div class="menu-divider"></div>
+
+                <div class="menu-item" id="menu-scan-qr-btn">
+                    <span class="menu-icon">📷</span>
+                    <span class="menu-text">Scan QR Code</span>
+                </div>
+
+                <div class="menu-item" id="menu-attendance-btn">
+                    <span class="menu-icon">📋</span>
+                    <span class="menu-text">Attendance</span>
+                </div>
+
+                <div class="menu-item" id="menu-analytics-btn">
+                    <span class="menu-icon">📊</span>
+                    <span class="menu-text">Analytics</span>
+                </div>
+
+                <div class="menu-divider"></div>
+
+                <div class="menu-item" id="menu-announcements-btn">
+                    <span class="menu-icon">📢</span>
+                    <span class="menu-text">Announcements</span>
+                </div>
+
+                <div class="menu-divider"></div>
+
+                <div class="menu-item" id="menu-import-btn">
+                    <span class="menu-icon">📥</span>
+                    <span class="menu-text">Import Excel</span>
+                </div>
+                <input type="file" id="import-excel-input" accept=".xlsx, .xls" style="display: none;">
+
+                <div class="menu-item" id="menu-export-btn">
+                    <span class="menu-icon">📤</span>
+                    <span class="menu-text">Export Excel</span>
+                </div>
+
+                <div class="menu-divider"></div>
+
+                <div class="menu-item" id="menu-theme-toggle">
+                    <span class="menu-icon">🌙</span>
+                    <span class="menu-text">Dark Mode</span>
+                </div>
+
+                <div class="menu-item" id="menu-password-btn">
+                    <span class="menu-icon">🔒</span>
+                    <span class="menu-text">Change Password</span>
+                </div>
+                <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+                <!-- QR Code Libraries -->
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+                <script src="https://unpkg.com/html5-qrcode"></script>
+
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+                <!-- EmailJS SDK -->
+                <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+                <script src="api.js"></script>
+                <script src="app.js"></script>
+
+                <!-- Payment Modal -->
+                <div id="payment-modal" class="modal">
+                    <div class="modal-content payment-modal-content">
+                        <!-- Decorative Elements -->
+                        <div class="payment-modal-decoration">
+                            <div class="payment-glow payment-glow-1"></div>
+                            <div class="payment-glow payment-glow-2"></div>
+                        </div>
+
+                        <div class="modal-header payment-modal-header">
+                            <div class="payment-modal-title-wrapper">
+                                <span class="payment-modal-icon">💳</span>
+                                <h2>Record Payment</h2>
+                            </div>
+                            <button class="close-modal payment-close-btn" onclick="app.closePaymentModal()"
+                                aria-label="Close">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+
+                        <form id="payment-form" class="payment-form" onsubmit="app.handlePaymentSubmit(event)">
+                            <input type="hidden" id="payment-customer-id">
+
+                            <!-- Customer Name Field -->
+                            <div class="form-group payment-form-group">
+                                <label class="payment-label">
+                                    <span class="payment-label-icon">👤</span>
+                                    Customer Name
+                                </label>
+                                <div class="payment-input-wrapper">
+                                    <input type="text" id="payment-customer-name"
+                                        class="payment-input payment-input-readonly" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Amount and Date Row -->
+                            <div class="payment-form-row">
+                                <div class="form-group payment-form-group">
+                                    <label class="payment-label">
+                                        <span class="payment-label-icon">💰</span>
+                                        Amount (₹)
+                                    </label>
+                                    <div class="payment-input-wrapper">
+                                        <input type="number" id="payment-amount" class="payment-input" required
+                                            placeholder="Enter amount">
+                                    </div>
+                                </div>
+
+                                <div class="form-group payment-form-group">
+                                    <label class="payment-label">
+                                        <span class="payment-label-icon">📅</span>
+                                        Payment Date
+                                    </label>
+                                    <div class="payment-input-wrapper">
+                                        <input type="date" id="payment-date" class="payment-input" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Method and Plan Row -->
+                            <div class="payment-form-row">
+                                <div class="form-group payment-form-group">
+                                    <label class="payment-label">
+                                        <span class="payment-label-icon">💳</span>
+                                        Payment Method
+                                    </label>
+                                    <div class="payment-input-wrapper">
+                                        <select id="payment-method" class="payment-input payment-select" required>
+                                            <option value="Cash">Cash</option>
+                                            <option value="UPI">UPI</option>
+                                            <option value="Card">Card</option>
+                                            <option value="Bank Transfer">Bank Transfer</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group payment-form-group">
+                                    <label class="payment-label">
+                                        <span class="payment-label-icon">📋</span>
+                                        Plan Type
+                                    </label>
+                                    <div class="payment-input-wrapper">
+                                        <select id="payment-plan" class="payment-input payment-select" required>
+                                            <option value="Monthly">Monthly</option>
+                                            <option value="Quarterly">Quarterly</option>
+                                            <option value="Half-Yearly">Half-Yearly</option>
+                                            <option value="Yearly">Yearly</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Receipt Number -->
+                            <div class="form-group payment-form-group">
+                                <label class="payment-label">
+                                    <span class="payment-label-icon">🧾</span>
+                                    Receipt Number <span class="payment-optional">(Optional)</span>
+                                </label>
+                                <div class="payment-input-wrapper">
+                                    <input type="text" id="payment-receipt" class="payment-input"
+                                        placeholder="Enter receipt number">
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="form-group payment-form-group">
+                                <label class="payment-label">
+                                    <span class="payment-label-icon">📝</span>
+                                    Notes
+                                </label>
+                                <div class="payment-input-wrapper">
+                                    <textarea id="payment-notes" rows="3" class="payment-input payment-textarea"
+                                        placeholder="Additional notes (optional)"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="payment-submit-btn">
+                                <span class="payment-submit-icon">✓</span>
+                                <span class="payment-submit-text">Save Payment</span>
+                                <div class="payment-submit-shine"></div>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Payment View Overlay -->
+                <div id="payment-view" class="view-overlay">
+                    <div class="view-header">
+                        <h2>Payment History</h2>
+                        <div style="flex: 1;"></div>
+                        <button class="btn btn-primary" onclick="app.exportPayments()" style="margin-right: 15px;">
+                            <span class="btn-icon">📊</span> Export to Excel
+                        </button>
+                        <button class="btn-icon" onclick="app.togglePaymentView()">✕</button>
+                    </div>
+                    <div class="view-content">
+                        <div class="search-bar">
+                            <input type="text" id="payment-search"
+                                placeholder="🔍 Search payments by customer name, amount, or method..."
+                                onkeyup="app.filterPayments()">
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Customer</th>
+                                        <th>Amount</th>
+                                        <th>Method</th>
+                                        <th>Plan</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="payment-table-body">
+                                    <!-- Payments will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Announcements View Overlay -->
+                <div id="announcement-view" class="announcement-view-overlay" style="display: none;">
+                    <div class="announcement-view-header">
+                        <h2>📢 Announcements</h2>
+                        <button class="close-view-btn" onclick="app.toggleAnnouncementView()">✕</button>
+                    </div>
+                    <div class="announcement-view-content">
+
+                        <!-- Create Announcement Card -->
+                        <div class="announcement-create-card">
+                            <h3>✨ Create New Announcement</h3>
+                            <form id="announcement-form" onsubmit="app.handleAnnouncementSubmit(event)"
+                                class="announcement-form">
+                                <div class="form-row">
+                                    <div class="form-group full-width">
+                                        <label class="form-label">📝 Title</label>
+                                        <input type="text" id="ann-title" required class="form-input"
+                                            placeholder="Enter announcement title..." maxlength="100">
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group full-width">
+                                        <label class="form-label">💬 Message</label>
+                                        <textarea id="ann-message" required class="form-textarea" rows="3"
+                                            placeholder="Enter announcement message..." maxlength="500"></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="form-row two-cols">
+                                    <div class="form-group">
+                                        <label class="form-label">📅 Start Date</label>
+                                        <input type="date" id="ann-start-date" required class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">📅 End Date</label>
+                                        <input type="date" id="ann-end-date" required class="form-input">
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group full-width">
+                                        <label class="form-label">🏷️ Type</label>
+                                        <select id="ann-type" class="form-select">
+                                            <option value="info">ℹ️ Information</option>
+                                            <option value="important">⚠️ Important</option>
+                                            <option value="offer">🏷️ Offer</option>
+                                            <option value="event">🎉 Event</option>
+                                            <option value="maintenance">🔧 Maintenance</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-announcement-submit">
+                                    <span class="btn-icon">📢</span> Post Announcement
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Active Announcements Section -->
+                        <div class="announcement-list-section">
+                            <h3>📋 Active & Recent Announcements</h3>
+                            <div id="announcement-list" class="announcement-list">
+                                <p class="loading-text">Loading announcements...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+</body>
+
+</html>

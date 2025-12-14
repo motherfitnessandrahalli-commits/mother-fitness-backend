@@ -1,0 +1,29 @@
+{
+    "name": "mother-fitness-desktop",
+    "version": "1.0.0",
+    "description": "Mother Fitness Gym Management System Desktop App",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "dist": "electron-builder"
+    },
+    "author": {
+        "name": "Mother Fitness",
+        "email": "support@motherfitness.com"
+    },
+    "license": "ISC",
+    "devDependencies": {
+        "electron": "^29.0.0",
+        "electron-builder": "^24.13.0"
+    },
+    "build": {
+        "appId": "com.motherfitness.manager",
+        "productName": "MotherFitness",
+        "win": {
+            "target": "nsis"
+        },
+        "directories": {
+            "output": "dist"
+        }
+    }
+}

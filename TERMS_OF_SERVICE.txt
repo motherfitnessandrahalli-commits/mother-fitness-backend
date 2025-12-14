@@ -1,0 +1,198 @@
+TERMS OF SERVICE
+Ultra Fitness Gym Management System
+
+1. ACCEPTANCE OF TERMS
+By installing and using the Ultra Fitness Gym Management System ("Software"), the Client agrees to be bound by these terms.
+
+2. USAGE RULES
+- Authorized Use: The Software is to be used solely for the internal business operations of the Client.
+- Data Security: The Client is responsible for maintaining the confidentiality of administrative credentials and backing up data regularly.
+- Compliance: The Software must not be used for any unlawful purposes or in violation of any applicable regulations.
+
+3. SUPPORT AND MAINTENANCE POLICY
+
+3.1. Free Support Period
+The Client is entitled to a free support period of 30 days commencing from the date of installation. During this period, the Developer will provide technical assistance for software defects and standard configuration issues at no additional cost.
+
+3.2. Paid Support
+Upon expiration of the 30-day free support period, all support services—including but not limited to software updates, bug fixes, troubleshooting, and technical consultation—shall be considered billable services. These services must be purchased separately under a new agreement.
+
+3.3. Maintenance Responsibility
+If the Client chooses not to purchase extended support after the initial 30-day period, the Client acknowledges and agrees that they maintain and operate the Software ENTIRELY AT THEIR OWN RISK. The Developer shall have no obligation to provide updates, fixes, or assistance, and shall not be held liable for any system failures, security vulnerabilities, or data loss occurring after the free support period.
+
+4. LIMITATION OF LIABILITY
+The Software is provided on an "AS IS" basis. To the maximum extent permitted by law, the Developer shall not be liable for any direct, indirect, incidental, or consequential damages arising out of the use or inability to use the Software.
+
+
+Software Ownership
+
+1. Ultra Fitness is a one-time purchase software.
+
+
+2. After purchasing, the gym owner receives lifetime usage rights of the version delivered at the time of installation.
+
+
+3. The source code, system architecture, and intellectual property remain owned by the developer unless explicitly transferred in writing.
+
+2. Free Support Period
+
+1. The buyer receives 30 days of free technical support starting from the installation date.
+
+
+2. Free support includes:
+
+Bug fixes
+
+Minor adjustments
+
+Help in using the software properly
+
+3. Free support does NOT include:
+
+New features
+
+Redesign
+
+Extra modules
+
+Server migrations
+
+Member data cleanup
+
+Major UI/UX changes
+
+
+4. After the 30-day period, support becomes paid, and the gym owner must purchase a support plan to receive assistance.
+
+
+Post-Support Responsibilities
+
+1. After the 30-day support period, the gym owner is fully responsible for:
+
+Managing their server
+
+Managing their domain
+
+Updating or modifying the software
+
+Any issues caused by their hosting provider
+
+
+
+2. If support is not renewed, the developer is not responsible for:
+
+Errors
+
+Bugs occurring later
+
+Server failures
+
+Data loss due to hosting
+
+Changes made by third parties
+
+
+
+3. The developer has no obligation to provide ongoing service after support expires.
+
+Warranty
+
+1. The software is delivered in working condition at the time of setup.
+
+2. The developer guarantees functionality only during the 30-day support period.
+
+3. After this period, no warranty applies without a paid support plan.
+
+
+Paid Support (Optional)
+
+After the free support period, the gym owner may purchase:
+
+Monthly support
+
+Quarterly support
+
+Yearly support
+
+
+Paid support includes only the services mentioned in the plan chosen by the buyer.
+
+Future Feature Requests
+
+1. New features or modifications are considered separate projects.
+
+
+2. Each new requirement will have its own pricing and delivery timeline.
+
+Data Responsibility
+
+1. The gym owner is responsible for the accuracy and safety of:
+
+Member data
+
+Attendance records
+
+Payment entries
+
+Uploaded photos
+
+
+
+2. The developer is not responsible for data loss caused by:
+
+Hosting issues
+
+Incorrect usage
+
+Accidental deletion by the gym
+
+Third-Party Services
+
+If the gym uses additional services such as:
+
+SMS APIs
+
+WhatsApp APIs
+
+Payment gateways
+
+Cloud storage
+
+
+These services come with separate charges and are NOT included in the software price.
+
+No Refund Policy
+
+1. Once the software is installed and activated, no refund will be provided.
+
+
+2. The software is custom-built and non-returnable.
+
+Limitation of Liability
+
+The developer is not responsible for:
+
+Loss of revenue
+
+Operational downtime
+
+Misuse of the software
+
+Staff mistakes
+
+Device or network failures
+
+Technical issues caused by third-party platforms
+
+
+Maximum liability is limited to the amount paid for the software.
+
+Acceptance of Terms
+
+By completing the purchase and installation, the gym owner agrees to:
+
+All terms stated in this document
+
+The support period rules
+
+The post-support responsibilities

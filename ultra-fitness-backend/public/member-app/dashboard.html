@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6c5ce7">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Dashboard - Ultra Fitness Member</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="stylesheet" href="./styles.css?v=7.0">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>Ultra Fitness</h1>
+                <div style="display: flex; gap: 15px; align-items: center; flex-shrink: 0;">
+                    <button id="hamburgerBtn" class="btn-icon" aria-label="Open Menu">☰</button>
+                </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Announcement Banner -->
+            <div id="announcement-banner" class="announcement-banner" style="display: none;"></div>
+
+            <!-- Member Info Card -->
+            <div class="member-card">
+                <div class="member-avatar">👤</div>
+                <h2 id="memberName">Loading...</h2>
+                <p id="memberId" class="member-id">U001</p>
+
+                <!-- Achievement Badges -->
+                <div class="member-badges" id="memberBadges">
+                    <div class="badge bronze locked" data-badge="Bronze">
+                        <span class="badge-icon">🥉</span>
+                    </div>
+                    <div class="badge silver locked" data-badge="Silver">
+                        <span class="badge-icon">🥈</span>
+                    </div>
+                    <div class="badge gold locked" data-badge="Gold">
+                        <span class="badge-icon">🥇</span>
+                    </div>
+                    <div class="badge beast locked" data-badge="Beast Mode">
+                        <span class="badge-icon">💪</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plan Status Card -->
+            <div class="status-card" id="statusCard">
+                <div class="status-badge" id="statusBadge">Active</div>
+                <h3>Membership Plan</h3>
+                <p class="plan-type" id="planType">Monthly</p>
+                <div class="expiry-countdown">
+                    <p class="countdown-label">Days Remaining</p>
+                    <h2 id="daysRemaining">--</h2>
+                    <p class="expiry-date">Expires on <span id="expiryDate">--</span></p>
+                </div>
+            </div>
+
+            <!-- Live Gym Count Card -->
+            <div class="gym-count-card">
+                <div class="gym-count-icon">👥</div>
+                <div class="gym-count-content">
+                    <h3>Live Gym Count</h3>
+                    <div class="gym-count-display">
+                        <span id="gymCountNumber" class="gym-count-number">--</span>
+                        <span class="gym-count-label">members in gym</span>
+                    </div>
+                    <div id="crowdLevel" class="crowd-level">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Monthly Progress Card -->
+            <div class="monthly-progress-card">
+                <h3 id="progressMonth">📊 December Progress</h3>
+                <div class="progress-stats">
+                    <div class="stat-item">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="totalCheckIns">--</span>
+                            <span class="stat-label">Check-ins</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="daysMissed">--</span>
+                            <span class="stat-label">Days Missed</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">🔥</div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="currentStreak">--</span>
+                            <span class="stat-label">Day Streak</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <a href="./qr-code.html" class="action-btn">
+                    <span class="action-icon">📱</span>
+                    <span class="action-label">My QR Code</span>
+                </a>
+                <a href="./attendance.html" class="action-btn">
+                    <span class="action-icon">📅</span>
+                    <span class="action-label">Attendance</span>
+                </a>
+                <a href="./bmi-calculator.html" class="action-btn">
+                    <span class="action-icon">⚖️</span>
+                    <span class="action-label">BMI Calculator</span>
+                </a>
+                <a href="./payments.html" class="action-btn">
+                    <span class="action-icon">💳</span>
+                    <span class="action-label">Payments</span>
+                </a>
+                <a href="./profile.html" class="action-btn">
+                    <span class="action-icon">⚙️</span>
+                    <span class="action-label">Settings</span>
+                </a>
+            </div>
+        </main>
+
+        <!-- Hamburger Menu Overlay -->
+        <div id="menuOverlay" class="menu-overlay"></div>
+
+        <!-- Hamburger Menu -->
+        <div id="sideMenu" class="side-menu">
+            <div class="menu-header">
+                <h3>Menu</h3>
+                <button id="closeMenuBtn" class="close-menu-btn">×</button>
+            </div>
+            <div class="menu-items">
+                <div class="menu-item" id="menuThemeToggle">
+                    <span class="menu-icon">🌙</span>
+                    <span>Dark Mode</span>
+                </div>
+                <a href="./qr-code.html" class="menu-item">
+                    <span class="menu-icon">📱</span>
+                    <span>My QR Code</span>
+                </a>
+                <a href="./attendance.html" class="menu-item">
+                    <span class="menu-icon">📅</span>
+                    <span>Attendance</span>
+                </a>
+                <a href="./bmi-calculator.html" class="menu-item">
+                    <span class="menu-icon">⚖️</span>
+                    <span>BMI Calculator</span>
+                </a>
+                <a href="./payments.html" class="menu-item">
+                    <span class="menu-icon">💳</span>
+                    <span>Payments</span>
+                </a>
+                <a href="./profile.html" class="menu-item">
+                    <span class="menu-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+                <div class="menu-divider"></div>
+                <div class="menu-item text-danger" id="menuLogoutBtn">
+                    <span class="menu-icon">🚪</span>
+                    <span>Logout</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Force Password Change Modal -->
+        <div id="passwordModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>⚠️ Change Your Password</h3>
+                <p>You must change your password before continuing.</p>
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label>Current Password</label>
+                        <input type="password" id="currentPwd" required>
+                    </div>
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" id="newPwd" minlength="4" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" id="confirmPwd" minlength="4" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Change Password</button>
+                    <div id="pwdError" class="error-message" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Badge Celebration Popup -->
+        <div id="badgePopup" class="badge-popup" style="display: none;">
+            <div class="badge-popup-overlay"></div>
+            <div class="badge-popup-content">
+                <!-- Confetti Animation -->
+                <div class="confetti-container" id="confettiContainer"></div>
+
+                <!-- Badge Icon -->
+                <div class="badge-icon-large" id="badgeIconLarge">🥈</div>
+
+                <!-- Content -->
+                <h2 class="badge-popup-title">🎉 Achievement Unlocked!</h2>
+                <h3 class="badge-popup-badge-name" id="badgeName">Silver Badge</h3>
+                <p class="badge-popup-message" id="badgeMessage">30 gym visits completed — you're killing it! 💪🔥</p>
+
+                <!-- Button -->
+                <button class="btn-badge-awesome" id="badgePopupBtn">Awesome!</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./api.js"></script>
+    <script src="./theme.js"></script>
+    <script src="./app.js"></script>
+
+    <!-- Force cache refresh on mobile -->
+    <script>
+        // Unregister old service worker and reload if version mismatch
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                for (let registration of registrations) {
+                    // Check if we need to update
+                    registration.update();
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
