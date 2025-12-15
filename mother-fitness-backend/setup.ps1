@@ -1,7 +1,7 @@
 # MongoDB and Backend Setup Script
 # Run this script to set up your environment
 
-Write-Host "🚀 Ultra Fitness Backend Setup" -ForegroundColor Cyan
+Write-Host "🚀 Mother Fitness Backend Setup" -ForegroundColor Cyan
 Write-Host "================================`n" -ForegroundColor Cyan
 
 # Step 1: Create .env file

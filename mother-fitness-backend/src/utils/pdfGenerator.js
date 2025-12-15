@@ -12,7 +12,7 @@ const generatePaymentReceipt = (payment, customer) => {
     // Header with gym name
     doc.fontSize(24)
         .font('Helvetica-Bold')
-        .text('ULTRA FITNESS GYM', { align: 'center' })
+        .text('MOTHER FITNESS GYM', { align: 'center' })
         .moveDown(0.5);
 
     doc.fontSize(10)

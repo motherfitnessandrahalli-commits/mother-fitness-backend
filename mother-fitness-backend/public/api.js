@@ -1,9 +1,11 @@
+
 // ===================================
 // API Configuration
 // ===================================
 
 const API_CONFIG = {
-    BASE_URL: 'http://localhost:5000',
+    // Backend API URL
+    BASE_URL: 'https://ultra-fitness-backend-b8vy.onrender.com',
     ENDPOINTS: {
         // Auth
         LOGIN: '/api/auth/login',
@@ -13,7 +15,7 @@ const API_CONFIG = {
 
         // Customers
         CUSTOMERS: '/api/customers',
-        CUSTOMER_BY_ID: (id) => `/api/customers/${id}`,
+        CUSTOMER_BY_ID: (id) => `/ api / customers / ${id} `,
         CUSTOMER_STATS: '/api/customers/stats/overview',
         SYNC_BADGES: '/api/customers/sync-badges',
 
@@ -21,7 +23,7 @@ const API_CONFIG = {
         ATTENDANCE: '/api/attendance',
         MARK_ATTENDANCE: '/api/attendance/mark',
         ATTENDANCE_STATS: '/api/attendance/stats',
-        CUSTOMER_ATTENDANCE: (id) => `/api/attendance/customer/${id}`,
+        CUSTOMER_ATTENDANCE: (id) => `/ api / attendance / customer / ${id} `,
 
         // Analytics
         DASHBOARD_STATS: '/api/analytics/dashboard',
@@ -31,15 +33,15 @@ const API_CONFIG = {
 
         // Upload
         UPLOAD_PHOTO: '/api/upload',
-        DELETE_PHOTO: (filename) => `/api/upload/${filename}`,
+        DELETE_PHOTO: (filename) => `/ api / upload / ${filename} `,
 
         // Notifications
         SEND_EXPIRY_EMAILS: '/api/notifications/email/expired',
 
         // Payments
         PAYMENTS: '/api/payments',
-        PAYMENT_BY_ID: (id) => `/api/payments/${id}`,
-        CUSTOMER_PAYMENTS: (customerId) => `/api/payments/customer/${customerId}`,
+        PAYMENT_BY_ID: (id) => `/ api / payments / ${id} `,
+        CUSTOMER_PAYMENTS: (customerId) => `/ api / payments / customer / ${customerId} `,
         PAYMENT_STATS: '/api/payments/stats/overview',
     }
 };
@@ -78,7 +80,7 @@ class API {
 
     // Generic request method
     async request(endpoint, options = {}) {
-        const url = `${this.baseURL}${endpoint}`;
+        const url = `${this.baseURL}${endpoint} `;
         const headers = {
             'Content-Type': 'application/json',
             ...options.headers,
@@ -87,7 +89,7 @@ class API {
         // Add auth token if available
         const token = this.getToken();
         if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+            headers['Authorization'] = `Bearer ${token} `;
         }
 
         const config = {
@@ -176,7 +178,7 @@ class API {
     async getCustomers(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const endpoint = queryString
-            ? `${API_CONFIG.ENDPOINTS.CUSTOMERS}?${queryString}`
+            ? `${API_CONFIG.ENDPOINTS.CUSTOMERS}?${queryString} `
             : API_CONFIG.ENDPOINTS.CUSTOMERS;
 
         return await this.request(endpoint);
@@ -230,15 +232,15 @@ class API {
     async getAttendance(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const endpoint = queryString
-            ? `${API_CONFIG.ENDPOINTS.ATTENDANCE}?${queryString}`
+            ? `${API_CONFIG.ENDPOINTS.ATTENDANCE}?${queryString} `
             : API_CONFIG.ENDPOINTS.ATTENDANCE;
 
         return await this.request(endpoint);
     }
 
     async getAttendanceStats(date) {
-        const queryString = date ? `?date=${date}` : '';
-        return await this.request(`${API_CONFIG.ENDPOINTS.ATTENDANCE_STATS}${queryString}`);
+        const queryString = date ? `? date = ${date} ` : '';
+        return await this.request(`${API_CONFIG.ENDPOINTS.ATTENDANCE_STATS}${queryString} `);
     }
 
     async getCustomerAttendance(customerId) {
@@ -273,13 +275,13 @@ class API {
         const formData = new FormData();
         formData.append('photo', file);
 
-        const url = `${this.baseURL}${API_CONFIG.ENDPOINTS.UPLOAD_PHOTO}`;
+        const url = `${this.baseURL}${API_CONFIG.ENDPOINTS.UPLOAD_PHOTO} `;
         const token = this.getToken();
 
         const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                'Authorization': `Bearer ${token} `,
             },
             body: formData,
         });
@@ -316,7 +318,7 @@ class API {
     async getPayments(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const endpoint = queryString
-            ? `${API_CONFIG.ENDPOINTS.PAYMENTS}?${queryString}`
+            ? `${API_CONFIG.ENDPOINTS.PAYMENTS}?${queryString} `
             : API_CONFIG.ENDPOINTS.PAYMENTS;
 
         return await this.request(endpoint);
@@ -368,7 +370,7 @@ class API {
     }
 
     async deleteAnnouncement(id) {
-        return await this.request(`/api/announcements/${id}`, {
+        return await this.request(`/ api / announcements / ${id} `, {
             method: 'DELETE',
         });
     }

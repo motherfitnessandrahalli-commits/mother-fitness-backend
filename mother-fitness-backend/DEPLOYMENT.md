@@ -1,6 +1,6 @@
 # Deployment Guide 🚀
 
-This guide explains how to deploy the Ultra Fitness Backend using Docker and Docker Compose.
+This guide explains how to deploy the Mother Fitness Backend using Docker and Docker Compose.
 
 ## Prerequisites
 
