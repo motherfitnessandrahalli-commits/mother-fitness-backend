@@ -15,7 +15,7 @@ const API_CONFIG = {
 
         // Customers
         CUSTOMERS: '/api/customers',
-        CUSTOMER_BY_ID: (id) => `/ api / customers / ${id} `,
+        CUSTOMER_BY_ID: (id) => `/api/customers/${id}`,
         CUSTOMER_STATS: '/api/customers/stats/overview',
         SYNC_BADGES: '/api/customers/sync-badges',
 
@@ -23,7 +23,7 @@ const API_CONFIG = {
         ATTENDANCE: '/api/attendance',
         MARK_ATTENDANCE: '/api/attendance/mark',
         ATTENDANCE_STATS: '/api/attendance/stats',
-        CUSTOMER_ATTENDANCE: (id) => `/ api / attendance / customer / ${id} `,
+        CUSTOMER_ATTENDANCE: (id) => `/api/attendance/customer/${id}`,
 
         // Analytics
         DASHBOARD_STATS: '/api/analytics/dashboard',
@@ -33,15 +33,15 @@ const API_CONFIG = {
 
         // Upload
         UPLOAD_PHOTO: '/api/upload',
-        DELETE_PHOTO: (filename) => `/ api / upload / ${filename} `,
+        DELETE_PHOTO: (filename) => `/api/upload/${filename}`,
 
         // Notifications
         SEND_EXPIRY_EMAILS: '/api/notifications/email/expired',
 
         // Payments
         PAYMENTS: '/api/payments',
-        PAYMENT_BY_ID: (id) => `/ api / payments / ${id} `,
-        CUSTOMER_PAYMENTS: (customerId) => `/ api / payments / customer / ${customerId} `,
+        PAYMENT_BY_ID: (id) => `/api/payments/${id}`,
+        CUSTOMER_PAYMENTS: (customerId) => `/api/payments/customer/${customerId}`,
         PAYMENT_STATS: '/api/payments/stats/overview',
     }
 };
@@ -370,7 +370,7 @@ class API {
     }
 
     async deleteAnnouncement(id) {
-        return await this.request(`/ api / announcements / ${id} `, {
+        return await this.request(`/api/announcements/${id}`, {
             method: 'DELETE',
         });
     }

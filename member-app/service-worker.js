@@ -82,7 +82,7 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(
-        self.registration.showNotification('Ultra Fitness', options)
+        self.registration.showNotification('Mother Fitness', options)
     );
 });
 

@@ -1,5 +1,5 @@
 // ===================================
-// Ultra Fitness - Application Logic
+// Mother Fitness - Application Logic
 // ===================================
 
 // Customer Data Model
@@ -267,7 +267,7 @@ class GymApp {
 
     handleLogout() {
         this.api.logout();
-        sessionStorage.removeItem('ultraFitnessAuth');
+        sessionStorage.removeItem('motherFitnessAuth');
         window.location.reload();
     }
 
@@ -309,7 +309,7 @@ class GymApp {
 
     // Theme Management
     loadTheme() {
-        const savedTheme = localStorage.getItem('ultraFitnessTheme');
+        const savedTheme = localStorage.getItem('motherFitnessTheme');
         if (savedTheme) {
             this.currentTheme = savedTheme;
             if (savedTheme === 'light') {
@@ -332,7 +332,7 @@ class GymApp {
             text.textContent = this.currentTheme === 'light' ? 'Light Mode' : 'Dark Mode';
         }
 
-        localStorage.setItem('ultraFitnessTheme', this.currentTheme);
+        localStorage.setItem('motherFitnessTheme', this.currentTheme);
         this.showNotification('success', 'Theme Changed', `Switched to ${this.currentTheme} mode`);
     }
 
@@ -616,9 +616,9 @@ class GymApp {
     async notifyExpiredCustomers() {
         try {
             // EmailJS Configuration
-            const SERVICE_ID = 'service_dkjzjr9';
-            const TEMPLATE_ID = 'template_g5eeb74';
-            const PUBLIC_KEY = 'cVmdam9uXfxZ-594a';
+            const SERVICE_ID = 'service_ox63ro4';
+            const TEMPLATE_ID = 'template_hsl7iv5';
+            const PUBLIC_KEY = 'YeGoWt9Ev-1P5yskh';
 
             // Initialize EmailJS (only needs to be done once)
             emailjs.init(PUBLIC_KEY);
@@ -655,7 +655,7 @@ class GymApp {
                         to_name: customer.name,
                         plan_type: customer.plan,
                         expiry_date: new Date(customer.validity).toLocaleDateString('en-IN'),
-                        gym_name: 'Ultra Fitness Gym'
+                        gym_name: 'Mother Fitness Gym'
                     };
 
                     await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
@@ -777,7 +777,7 @@ class GymApp {
 
             // Generate filename with date
             const dateStr = new Date().toISOString().split('T')[0];
-            const fileName = `UltraFitness_Customers_${dateStr}.xlsx`;
+            const fileName = `MotherFitness_Customers_${dateStr}.xlsx`;
 
             // Save file
             XLSX.writeFile(wb, fileName);
@@ -911,7 +911,7 @@ class GymApp {
             XLSX.utils.book_append_sheet(wb, ws, "Payments");
 
             const dateStr = new Date().toISOString().split('T')[0];
-            const fileName = `UltraFitness_Payments_${dateStr}.xlsx`;
+            const fileName = `MotherFitness_Payments_${dateStr}.xlsx`;
 
             XLSX.writeFile(wb, fileName);
 
@@ -1943,7 +1943,7 @@ class GymApp {
             XLSX.utils.book_append_sheet(wb, ws, "Attendance");
 
             const dateStr = new Date().toISOString().split('T')[0];
-            const fileName = `UltraFitness_Attendance_${dateStr}.xlsx`;
+            const fileName = `MotherFitness_Attendance_${dateStr}.xlsx`;
 
             XLSX.writeFile(wb, fileName);
 
@@ -2649,7 +2649,7 @@ class GymApp {
 
             // Generate filename with date
             const dateStr = new Date().toISOString().split('T')[0];
-            const fileName = `UltraFitness_Attendance_${dateStr}.xlsx`;
+            const fileName = `MotherFitness_Attendance_${dateStr}.xlsx`;
 
             // Save file
             XLSX.writeFile(wb, fileName);

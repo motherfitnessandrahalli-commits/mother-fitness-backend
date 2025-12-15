@@ -1,7 +1,7 @@
 {
-    "name": "Ultra Fitness Member",
+    "name": "Mother Fitness Member",
     "short_name": "UF Member",
-    "description": "Ultra Fitness Gym Member App - View membership, attendance, and payments",
+    "description": "Mother Fitness Gym Member App - View membership, attendance, and payments",
     "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#1a1a2e",

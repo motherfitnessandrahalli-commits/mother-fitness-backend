@@ -1,6 +1,6 @@
 // API Configuration for Member App
 const API_CONFIG = {
-    BASE_URL: 'https://ultra-fitness-backend.onrender.com',
+    BASE_URL: 'https://ultra-fitness-backend-b8vy.onrender.com',
     ENDPOINTS: {
         MEMBER_LOGIN: '/api/member/login',
         MEMBER_PROFILE: '/api/member/me',
