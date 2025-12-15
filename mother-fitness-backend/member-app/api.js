@@ -1,4 +1,4 @@
-// API Configuration for Member App
+// API Configuration for Member App - Sync Fix
 const API_CONFIG = {
     BASE_URL: 'https://ultra-fitness-backend-b8vy.onrender.com',
     ENDPOINTS: {
