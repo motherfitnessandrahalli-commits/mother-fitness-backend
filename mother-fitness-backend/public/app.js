@@ -1885,7 +1885,7 @@ class GymApp {
                 emptyState.style.display = 'flex';
                 // Update message if filtered
                 if (!dateFilter) {
-                    emptyState.querySelector('h3').textContent = "No Check-ins Today";
+                    emptyState.querySelector('h2').textContent = "No Check-ins Today";
                     emptyState.querySelector('p').textContent = "Attendance records will appear here as members check in.";
                 }
                 return;
