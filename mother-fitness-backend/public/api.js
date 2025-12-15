@@ -5,7 +5,7 @@
 
 const API_CONFIG = {
     // Backend API URL
-    BASE_URL: 'https://ultra-fitness-backend-b8vy.onrender.com',
+    BASE_URL: 'https://mother-fitness-backend.onrender.com',
     ENDPOINTS: {
         // Auth
         LOGIN: '/api/auth/login',
