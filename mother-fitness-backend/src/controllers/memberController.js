@@ -16,8 +16,11 @@ const memberLogin = asyncHandler(async (req, res, next) => {
         return next(new AppError('Please provide member ID and password', 400));
     }
 
+    // Force uppercase memberId (handle u001 -> U001)
+    const upperMemberId = memberId.toUpperCase();
+
     // Find customer with password field
-    const customer = await Customer.findOne({ memberId }).select('+password');
+    const customer = await Customer.findOne({ memberId: upperMemberId }).select('+password');
     if (!customer) {
         return next(new AppError('Invalid member ID or password', 401));
     }
