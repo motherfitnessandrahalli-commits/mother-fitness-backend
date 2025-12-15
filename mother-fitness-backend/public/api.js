@@ -80,7 +80,7 @@ class API {
 
     // Generic request method
     async request(endpoint, options = {}) {
-        const url = `${this.baseURL}${endpoint} `;
+        const url = `${this.baseURL}${endpoint}`;
         const headers = {
             'Content-Type': 'application/json',
             ...options.headers,
@@ -89,7 +89,7 @@ class API {
         // Add auth token if available
         const token = this.getToken();
         if (token) {
-            headers['Authorization'] = `Bearer ${token} `;
+            headers['Authorization'] = `Bearer ${token}`;
         }
 
         const config = {
@@ -178,7 +178,7 @@ class API {
     async getCustomers(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const endpoint = queryString
-            ? `${API_CONFIG.ENDPOINTS.CUSTOMERS}?${queryString} `
+            ? `${API_CONFIG.ENDPOINTS.CUSTOMERS}?${queryString}`
             : API_CONFIG.ENDPOINTS.CUSTOMERS;
 
         return await this.request(endpoint);
@@ -232,15 +232,15 @@ class API {
     async getAttendance(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const endpoint = queryString
-            ? `${API_CONFIG.ENDPOINTS.ATTENDANCE}?${queryString} `
+            ? `${API_CONFIG.ENDPOINTS.ATTENDANCE}?${queryString}`
             : API_CONFIG.ENDPOINTS.ATTENDANCE;
 
         return await this.request(endpoint);
     }
 
     async getAttendanceStats(date) {
-        const queryString = date ? `? date = ${date} ` : '';
-        return await this.request(`${API_CONFIG.ENDPOINTS.ATTENDANCE_STATS}${queryString} `);
+        const queryString = date ? `?date=${date}` : '';
+        return await this.request(`${API_CONFIG.ENDPOINTS.ATTENDANCE_STATS}${queryString}`);
     }
 
     async getCustomerAttendance(customerId) {
@@ -275,13 +275,13 @@ class API {
         const formData = new FormData();
         formData.append('photo', file);
 
-        const url = `${this.baseURL}${API_CONFIG.ENDPOINTS.UPLOAD_PHOTO} `;
+        const url = `${this.baseURL}${API_CONFIG.ENDPOINTS.UPLOAD_PHOTO}`;
         const token = this.getToken();
 
         const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token} `,
+                'Authorization': `Bearer ${token}`,
             },
             body: formData,
         });
@@ -318,7 +318,7 @@ class API {
     async getPayments(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const endpoint = queryString
-            ? `${API_CONFIG.ENDPOINTS.PAYMENTS}?${queryString} `
+            ? `${API_CONFIG.ENDPOINTS.PAYMENTS}?${queryString}`
             : API_CONFIG.ENDPOINTS.PAYMENTS;
 
         return await this.request(endpoint);
