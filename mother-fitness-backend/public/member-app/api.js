@@ -1,6 +1,6 @@
-// API Configuration for Member App
+// API Configuration for Member App - Updated
 const API_CONFIG = {
-    BASE_URL: 'http://localhost:5000',
+    BASE_URL: 'https://ultra-fitness-backend-b8vy.onrender.com',
     ENDPOINTS: {
         MEMBER_LOGIN: '/api/member/login',
         MEMBER_PROFILE: '/api/member/me',
