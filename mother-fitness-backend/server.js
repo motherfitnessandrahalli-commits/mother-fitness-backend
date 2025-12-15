@@ -20,8 +20,8 @@ const startServer = async () => {
         // Connect to MongoDB
         await connectDB();
 
-        // Start server
-        server.listen(PORT, () => {
+        // Start server - bind to 0.0.0.0 for Render compatibility
+        server.listen(PORT, '0.0.0.0', () => {
             logger.info(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
             logger.info(`📊 Health check: http://localhost:${PORT}/health`);
         });
