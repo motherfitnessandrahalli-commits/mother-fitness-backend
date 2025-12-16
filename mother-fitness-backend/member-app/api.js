@@ -1,6 +1,7 @@
 // API Configuration for Member App - Sync Fix
 const API_CONFIG = {
-    BASE_URL: 'https://mother-fitness-backend.onrender.com',
+    // Backend API URL - Loaded from config.js
+    BASE_URL: (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || 'http://localhost:5000',
     ENDPOINTS: {
         MEMBER_LOGIN: '/api/member/login',
         MEMBER_PROFILE: '/api/member/me',
