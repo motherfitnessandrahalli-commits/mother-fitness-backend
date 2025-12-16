@@ -116,9 +116,58 @@ const changePassword = asyncHandler(async (req, res, next) => {
     }, 'Password updated successfully');
 });
 
+/**
+ * @desc    Reset/Create admin user
+ * @route   GET /api/auth/reset-admin?secret=YOUR_SECRET
+ * @access  Public (with secret key)
+ */
+const resetAdmin = asyncHandler(async (req, res, next) => {
+    const { secret } = req.query;
+
+    // Simple security check - you can change this secret
+    if (secret !== 'mother-fitness-2024') {
+        return next(new AppError('Unauthorized', 401));
+    }
+
+    const email = 'admin@motherfitness.com';
+    const password = '111111';
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+        // Update existing admin
+        user.password = password;
+        user.role = 'admin';
+        user.isActive = true;
+        await user.save();
+
+        sendSuccess(res, 200, {
+            message: 'Admin user updated successfully',
+            email,
+            password
+        }, 'Admin credentials reset');
+    } else {
+        // Create new admin
+        user = await User.create({
+            email,
+            password,
+            name: 'Admin User',
+            role: 'admin',
+            isActive: true
+        });
+
+        sendSuccess(res, 201, {
+            message: 'Admin user created successfully',
+            email,
+            password
+        }, 'Admin user created');
+    }
+});
+
 module.exports = {
     register,
     login,
     getMe,
     changePassword,
+    resetAdmin,
 };

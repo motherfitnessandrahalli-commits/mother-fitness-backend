@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, getMe, changePassword } = require('../controllers/authController');
+const { register, login, getMe, changePassword, resetAdmin } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -114,5 +114,25 @@ router.get('/me', protect, getMe);
  *         description: Password updated successfully
  */
 router.put('/change-password', protect, changePassword);
+
+/**
+ * @swagger
+ * /api/auth/reset-admin:
+ *   get:
+ *     summary: Reset/Create admin user (requires secret key)
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: secret
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Admin user reset successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/reset-admin', resetAdmin);
 
 module.exports = router;
