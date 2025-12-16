@@ -33,6 +33,11 @@ const customerSchemas = {
         memberId: Joi.string().trim().min(3).max(20).optional(),
         password: Joi.string().min(4).max(100).optional(),
         isFirstLogin: Joi.boolean().optional(),
+        initialPayment: Joi.object({
+            amount: Joi.number().required(),
+            paymentMethod: Joi.string().valid('Cash', 'UPI', 'Card', 'Bank Transfer').default('Cash'),
+            receiptNumber: Joi.string().allow('').optional()
+        }).optional(),
     }),
 
     update: Joi.object({
