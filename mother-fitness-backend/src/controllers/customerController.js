@@ -1,4 +1,4 @@
-const { Customer } = require('../models');
+const { Customer, Payment } = require('../models');
 const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler');
 const { paginate, createPaginationMeta, calculatePlanValidity } = require('../utils/helpers');
 
@@ -105,7 +105,7 @@ const getCustomer = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 const createCustomer = asyncHandler(async (req, res, next) => {
-    const { name, age, email, phone, plan, notes, photo, validity, memberId, password, isFirstLogin } = req.body;
+    const { name, age, email, phone, plan, notes, photo, validity, memberId, password, isFirstLogin, initialPayment } = req.body;
 
     // Calculate validity if not provided
     let validityDate = validity;
@@ -128,17 +128,45 @@ const createCustomer = asyncHandler(async (req, res, next) => {
         createdBy: req.user.id,
     });
 
+    let payment = null;
+
+    // Handle Initial Payment
+    if (initialPayment && initialPayment.amount) {
+        try {
+            payment = await Payment.create({
+                customerId: customer._id,
+                customerName: customer.name,
+                planType: customer.plan,
+                amount: initialPayment.amount,
+                paymentMethod: initialPayment.paymentMethod || 'Cash',
+                receiptNumber: initialPayment.receiptNumber,
+                paymentDate: new Date(),
+                status: 'completed',
+                addedBy: req.user.id
+            });
+        } catch (error) {
+            console.error('Failed to create initial payment:', error);
+            // We don't fail the customer creation if payment fails, 
+            // but we log it. User can add payment manually later.
+        }
+    }
+
     // Broadcast real-time update
     try {
         const { getIO } = require('../config/socket');
         const io = getIO();
         io.emit('customer:new', customer);
         io.emit('dashboard:update', { type: 'customer' });
+
+        if (payment) {
+            io.emit('payment:new', payment);
+            io.emit('dashboard:update', { type: 'payment' });
+        }
     } catch (error) {
         console.error('Socket emit error:', error.message);
     }
 
-    sendSuccess(res, 201, { customer }, 'Customer created successfully');
+    sendSuccess(res, 201, { customer, payment }, 'Customer created successfully');
 });
 
 /**

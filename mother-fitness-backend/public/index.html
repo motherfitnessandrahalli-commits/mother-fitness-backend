@@ -262,6 +262,34 @@
                         <input type="date" id="customer-validity" required>
                     </div>
                 </div>
+
+                <!-- Initial Payment Section (Only for new customers) -->
+                <div id="initial-payment-section"
+                    style="display: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0; padding-top: 15px;">
+                    <h3
+                        style="font-size: 16px; color: var(--text-primary); margin-bottom: 15px; display: flex; align-items: center;">
+                        <span style="margin-right: 8px;">💳</span> Initial Payment
+                    </h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="initial-payment-amount">Amount Paid (₹)</label>
+                            <input type="number" id="initial-payment-amount" placeholder="Enter amount">
+                        </div>
+                        <div class="form-group">
+                            <label for="initial-payment-method">Payment Method</label>
+                            <select id="initial-payment-method" class="ios-select">
+                                <option value="Cash">Cash</option>
+                                <option value="UPI">UPI</option>
+                                <option value="Card">Card</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="initial-payment-receipt">Receipt No (Optional)</label>
+                            <input type="text" id="initial-payment-receipt" placeholder="Receipt Number">
+                        </div>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label for="customer-notes">Additional Notes</label>
                     <textarea id="customer-notes" rows="3" placeholder="Any additional information..."></textarea>
@@ -505,9 +533,7 @@
                 <!-- EmailJS SDK -->
                 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
-                <!-- App Configuration -->
-                <script src="config.js"></script>
-                <script src="api.js?v=2"></script>
+                <script src="api.js"></script>
                 <script src="app.js"></script>
 
                 <!-- Payment Modal -->
