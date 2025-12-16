@@ -5,7 +5,9 @@
 
 const API_CONFIG = {
     // Backend API URL - Loaded from config.js
-    BASE_URL: (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || 'http://localhost:5000',
+    BASE_URL: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:5000'
+        : 'https://mother-fitness-backend.onrender.com',
     ENDPOINTS: {
         // Auth
         LOGIN: '/api/auth/login',
