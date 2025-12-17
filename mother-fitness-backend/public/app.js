@@ -1700,9 +1700,14 @@ class GymApp {
             phone: document.getElementById('customer-phone').value.trim(),
             plan: document.getElementById('customer-plan').value,
             validity: document.getElementById('customer-validity').value,
-            balance: document.getElementById('initial-balance').value,
             notes: document.getElementById('customer-notes').value.trim()
         };
+
+        // Handle Balance (Only for new customers)
+        if (!this.editingCustomerId) {
+            const balanceInput = document.getElementById('initial-balance').value;
+            customerData.balance = balanceInput ? parseFloat(balanceInput) : 0;
+        }
 
         // Initial Payment Data (Only for new customers)
         const paymentAmount = document.getElementById('initial-payment-amount').value;
