@@ -114,6 +114,16 @@ const generatePaymentReceipt = (payment, customer) => {
     doc.text('Total Paid', labelX, y)
         .text(`₹ ${payment.amount}`, valueX, y);
     y += gap + 20;
+
+    // Add Balance Due if exists
+    if (customer.balance > 0) {
+        doc.fillColor('#d63031') // Red color for warning
+            .text('Balance Due', labelX, y)
+            .text(`₹ ${customer.balance}`, valueX, y)
+            .fillColor('black'); // Reset color
+        y += gap + 20;
+    }
+
     doc.fontSize(12).font('Helvetica');
 
     // Separator
