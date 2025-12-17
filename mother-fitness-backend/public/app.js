@@ -1628,6 +1628,8 @@ class GymApp {
                 document.getElementById('customer-phone').value = customer.phone;
                 document.getElementById('customer-plan').value = customer.plan;
                 document.getElementById('customer-validity').value = customer.validity;
+                document.getElementById('customer-validity').value = customer.validity;
+                document.getElementById('customer-balance').value = customer.balance || 0;
                 document.getElementById('customer-notes').value = customer.notes;
 
                 if (customer.photo) {
@@ -1653,7 +1655,7 @@ class GymApp {
             document.getElementById('initial-payment-amount').value = '';
             document.getElementById('initial-payment-amount').value = '';
             document.getElementById('initial-payment-method').value = 'Cash';
-            document.getElementById('initial-balance').value = '';
+            document.getElementById('customer-balance').value = '';
             document.getElementById('initial-payment-receipt').value = '';
         }
 
@@ -1688,7 +1690,7 @@ class GymApp {
             phone: document.getElementById('customer-phone').value.trim(),
             plan: document.getElementById('customer-plan').value,
             validity: document.getElementById('customer-validity').value,
-            balance: document.getElementById('initial-balance').value,
+            balance: document.getElementById('customer-balance').value,
             notes: document.getElementById('customer-notes').value.trim()
         };
 
