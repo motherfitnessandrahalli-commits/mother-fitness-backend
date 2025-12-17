@@ -26,6 +26,7 @@ const customerSchemas = {
         email: Joi.string().email().required().trim(),
         phone: Joi.string().required().pattern(/^[0-9+\-\s()]*$/).min(10).max(15),
         plan: Joi.string().required().valid('Monthly', 'Quarterly', 'Half-Yearly', 'Yearly'),
+        balance: Joi.number().optional().default(0),
         validity: Joi.date().iso(),
         notes: Joi.string().allow('').max(500),
         photo: Joi.string().allow('').optional(), // Allow any string (URL or base64)
@@ -46,6 +47,7 @@ const customerSchemas = {
         email: Joi.string().email().trim(),
         phone: Joi.string().pattern(/^[0-9+\-\s()]*$/).min(10).max(15),
         plan: Joi.string().valid('Monthly', 'Quarterly', 'Half-Yearly', 'Yearly'),
+        balance: Joi.number().optional(),
         validity: Joi.date().iso(),
         notes: Joi.string().allow('').max(500),
         photo: Joi.string().allow('').optional(), // Allow any string (URL or base64)
