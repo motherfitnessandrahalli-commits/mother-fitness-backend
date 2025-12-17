@@ -250,7 +250,7 @@
                     <div class="form-group">
                         <label for="customer-plan">Plan Type *</label>
                         <select id="customer-plan" class="ios-select" required>
-                            <option value="" disabled selected>Select Plan</option>
+                            <option value="">Select Plan</option>
                             <option value="Monthly">Monthly</option>
                             <option value="Quarterly">Quarterly (3 Months)</option>
                             <option value="Half-Yearly">Half-Yearly (6 Months)</option>
@@ -261,15 +261,11 @@
                         <label for="customer-validity">Plan Validity (End Date) *</label>
                         <input type="date" id="customer-validity" required>
                     </div>
-                    <div class="form-group">
-                        <label for="customer-balance">Balance Amount (Optional)</label>
-                        <input type="number" id="customer-balance" placeholder="Outstanding amount">
-                    </div>
                 </div>
 
                 <!-- Initial Payment Section (Only for new customers) -->
                 <div id="initial-payment-section"
-                    style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                    style="display: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0; padding-top: 15px;">
                     <h3
                         style="font-size: 16px; color: var(--text-primary); margin-bottom: 15px; display: flex; align-items: center;">
                         <span style="margin-right: 8px;">💳</span> Initial Payment
@@ -287,6 +283,10 @@
                                 <option value="Card">Card</option>
                                 <option value="Bank Transfer">Bank Transfer</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="initial-balance">Balance Amount (Optional)</label>
+                            <input type="number" id="initial-balance" placeholder="Outstanding amount">
                         </div>
                         <div class="form-group">
                             <label for="initial-payment-receipt">Receipt No (Optional)</label>
@@ -643,6 +643,18 @@
                                 <div class="payment-input-wrapper">
                                     <input type="text" id="payment-receipt" class="payment-input"
                                         placeholder="Enter receipt number">
+                                </div>
+                            </div>
+
+                            <!-- Balance -->
+                            <div class="form-group payment-form-group">
+                                <label class="payment-label">
+                                    <span class="payment-label-icon">⚖️</span>
+                                    Update Outstanding Balance <span class="payment-optional">(Optional)</span>
+                                </label>
+                                <div class="payment-input-wrapper">
+                                    <input type="number" id="payment-balance" class="payment-input"
+                                        placeholder="Enter new balance amount">
                                 </div>
                             </div>
 

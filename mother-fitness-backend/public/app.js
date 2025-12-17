@@ -4,7 +4,7 @@
 
 // Customer Data Model
 class Customer {
-    constructor(id, name, age, email, phone, plan, validity, notes = '', photo = '', createdAt = new Date(), memberId = '') {
+    constructor(id, name, age, email, phone, plan, validity, notes = '', photo = '', createdAt = new Date(), memberId = '', balance = 0) {
         this.id = id;
         this.name = name;
         this.age = age;
@@ -16,6 +16,7 @@ class Customer {
         this.photo = photo;
         this.createdAt = createdAt;
         this.memberId = memberId;
+        this.balance = balance;
     }
 
     getStatus() {
@@ -372,7 +373,8 @@ class GymApp {
                 c.notes,
                 c.photo || '',
                 new Date(c.createdAt),
-                c.memberId
+                c.memberId,
+                c.balance || 0 // Add balance
             ));
 
             this.render();
@@ -427,7 +429,8 @@ class GymApp {
                 c.notes,
                 c.photo || '',
                 new Date(c.createdAt),
-                c.memberId
+                c.memberId,
+                c.balance || 0
             );
 
             this.customers.push(newCustomer);
@@ -1034,6 +1037,12 @@ class GymApp {
                 // Auto-select plan based on customer's plan
                 const planSelect = document.getElementById('payment-plan');
                 if (customer.plan) planSelect.value = customer.plan;
+
+                // Set current balance placeholder or value
+                const balanceInput = document.getElementById('payment-balance');
+                if (customer.balance !== undefined) {
+                    balanceInput.placeholder = `Current Balance: ${customer.balance}`;
+                }
             }
         }
 
@@ -1071,7 +1080,8 @@ class GymApp {
             planType: document.getElementById('payment-plan').value,
             receiptNumber: document.getElementById('payment-receipt').value,
             notes: document.getElementById('payment-notes').value,
-            status: 'completed'
+            status: 'completed',
+            balance: document.getElementById('payment-balance').value // Send new balance if provided
         };
 
         try {
@@ -1106,7 +1116,9 @@ class GymApp {
                         updatedCustomer.validity.split('T')[0],
                         updatedCustomer.notes,
                         updatedCustomer.photo || this.customers[index].photo,
-                        new Date(updatedCustomer.createdAt)
+                        new Date(updatedCustomer.createdAt),
+                        updatedCustomer.memberId,
+                        updatedCustomer.balance // Update balance locally
                     );
 
                     console.log('New plan:', this.customers[index].plan, 'validity:', this.customers[index].validity);
@@ -1628,8 +1640,6 @@ class GymApp {
                 document.getElementById('customer-phone').value = customer.phone;
                 document.getElementById('customer-plan').value = customer.plan;
                 document.getElementById('customer-validity').value = customer.validity;
-                document.getElementById('customer-validity').value = customer.validity;
-                document.getElementById('customer-balance').value = customer.balance || 0;
                 document.getElementById('customer-notes').value = customer.notes;
 
                 if (customer.photo) {
@@ -1655,7 +1665,7 @@ class GymApp {
             document.getElementById('initial-payment-amount').value = '';
             document.getElementById('initial-payment-amount').value = '';
             document.getElementById('initial-payment-method').value = 'Cash';
-            document.getElementById('customer-balance').value = '';
+            document.getElementById('initial-balance').value = '';
             document.getElementById('initial-payment-receipt').value = '';
         }
 
@@ -1690,7 +1700,7 @@ class GymApp {
             phone: document.getElementById('customer-phone').value.trim(),
             plan: document.getElementById('customer-plan').value,
             validity: document.getElementById('customer-validity').value,
-            balance: document.getElementById('customer-balance').value,
+            balance: document.getElementById('initial-balance').value,
             notes: document.getElementById('customer-notes').value.trim()
         };
 
@@ -2404,7 +2414,9 @@ class GymApp {
                             c.validity.split('T')[0],
                             c.notes,
                             c.photo || '',
-                            new Date(c.createdAt)
+                            new Date(c.createdAt),
+                            c.memberId,
+                            c.balance || 0
                         );
                         // Add to local cache
                         this.customers.push(customer);

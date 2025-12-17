@@ -79,7 +79,8 @@ const createPayment = asyncHandler(async (req, res, next) => {
         receiptNumber,
         planType,
         status,
-        notes
+        notes,
+        balance // Extract balance
     } = req.body;
 
     // Verify customer exists
@@ -119,6 +120,12 @@ const createPayment = asyncHandler(async (req, res, next) => {
     // Update customer plan and validity
     customer.plan = planType;
     customer.validity = endDate;
+
+    // Update balance if provided
+    if (balance !== undefined && balance !== '') {
+        customer.balance = balance;
+    }
+
     await customer.save();
 
     // Create payment
