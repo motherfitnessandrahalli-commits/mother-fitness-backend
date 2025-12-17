@@ -33,16 +33,45 @@
 
         async function loadPayments() {
             try {
-                const response = await api.getPayments(10, 1);
+                const [paymentsRes, profileRes] = await Promise.all([
+                    api.getPayments(10, 1),
+                    api.getProfile()
+                ]);
+
                 const container = document.getElementById('paymentList');
                 container.innerHTML = '';
 
-                if (response.data.payments.length === 0) {
-                    container.innerHTML = '<p class="empty-state">No payment records yet</p>';
+                // Show Balance Card if exists
+                if (profileRes.data.customer.balance > 0) {
+                    const balanceCard = document.createElement('div');
+                    balanceCard.className = 'balance-card';
+                    balanceCard.style.cssText = `
+                        background: linear-gradient(135deg, #ff7675, #d63031);
+                        color: white;
+                        padding: 20px;
+                        border-radius: 16px;
+                        margin-bottom: 20px;
+                        box-shadow: 0 4px 15px rgba(214, 48, 49, 0.3);
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    `;
+                    balanceCard.innerHTML = `
+                        <div>
+                            <p style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 4px;">Outstanding Balance</p>
+                            <h2 style="font-size: 1.8rem; margin: 0;">₹${profileRes.data.customer.balance}</h2>
+                        </div>
+                        <div style="font-size: 2rem; opacity: 0.8;">⚠️</div>
+                    `;
+                    container.appendChild(balanceCard);
+                }
+
+                if (paymentsRes.data.payments.length === 0) {
+                    container.innerHTML += '<p class="empty-state">No payment records yet</p>';
                     return;
                 }
 
-                response.data.payments.forEach(payment => {
+                paymentsRes.data.payments.forEach(payment => {
                     const date = new Date(payment.paymentDate);
                     const div = document.createElement('div');
                     div.className = 'list-item payment-item';
@@ -60,6 +89,7 @@
                     container.appendChild(div);
                 });
             } catch (error) {
+                console.error('Load failed:', error);
                 document.getElementById('paymentList').innerHTML =
                     '<p class="error-state">Failed to load payments</p>';
             }

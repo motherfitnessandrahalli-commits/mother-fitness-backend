@@ -401,6 +401,7 @@ class GymApp {
             email: customerData.email,
             phone: customerData.phone,
             plan: customerData.plan,
+            balance: customerData.balance,
             validity: customerData.validity,
             notes: customerData.notes,
             photo: this.currentPhoto,
@@ -1650,7 +1651,9 @@ class GymApp {
             // Show payment section for new customers
             document.getElementById('initial-payment-section').style.display = 'block';
             document.getElementById('initial-payment-amount').value = '';
+            document.getElementById('initial-payment-amount').value = '';
             document.getElementById('initial-payment-method').value = 'Cash';
+            document.getElementById('initial-balance').value = '';
             document.getElementById('initial-payment-receipt').value = '';
         }
 
@@ -1685,6 +1688,7 @@ class GymApp {
             phone: document.getElementById('customer-phone').value.trim(),
             plan: document.getElementById('customer-plan').value,
             validity: document.getElementById('customer-validity').value,
+            balance: document.getElementById('initial-balance').value,
             notes: document.getElementById('customer-notes').value.trim()
         };
 
