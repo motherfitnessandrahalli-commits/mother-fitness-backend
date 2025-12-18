@@ -2240,6 +2240,12 @@ class GymApp {
                         <span class="detail-icon">📅</span>
                         <span>Valid until ${validityDate}</span>
                     </div>
+                    ${(customer.balance && customer.balance > 0) ? `
+                    <div class="customer-detail">
+                        <span class="detail-icon">⚖️</span>
+                        <span style="color: #FFC107; font-weight: bold;">Balance: ₹${customer.balance}</span>
+                    </div>
+                    ` : ''}
                     ${customer.notes ? `
                     <div class="customer-detail">
                         <span class="detail-icon">📝</span>
