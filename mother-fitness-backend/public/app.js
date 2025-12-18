@@ -194,12 +194,12 @@ class GymApp {
         }
     }
 
-    animateValue(obj, start, end, duration) {
+    animateValue(obj, start, end, duration, prefix = '') {
         let startTimestamp = null;
         const step = (timestamp) => {
             if (!startTimestamp) startTimestamp = timestamp;
             const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            obj.innerHTML = Math.floor(progress * (end - start) + start);
+            obj.innerHTML = prefix + Math.floor(progress * (end - start) + start);
             if (progress < 1) {
                 window.requestAnimationFrame(step);
             }
@@ -2016,15 +2016,22 @@ class GymApp {
 
         try {
             // Fetch data from API
-            const [planData, demoData, growthData] = await Promise.all([
+            // Fetch data from API
+            const [planData, demoData, growthData, revenueData] = await Promise.all([
                 this.api.getPlanPopularity(),
                 this.api.getAgeDemographics(),
-                this.api.getBusinessGrowth()
+                this.api.getBusinessGrowth(),
+                this.api.getPaymentStats()
             ]);
 
             const plans = planData.data;
             const ages = demoData.data;
             const growth = growthData.data;
+            const revenue = revenueData.data;
+
+            // Update Revenue Cards
+            this.animateValue(document.getElementById('analytics-monthly-revenue'), 0, revenue.monthlyRevenue, 1000, '₹ ');
+            this.animateValue(document.getElementById('analytics-total-revenue'), 0, revenue.totalRevenue, 1000, '₹ ');
 
             // Destroy existing charts if they exist
             if (this.charts.plan) this.charts.plan.destroy();

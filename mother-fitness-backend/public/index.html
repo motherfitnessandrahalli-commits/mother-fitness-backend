@@ -129,6 +129,24 @@
 
             <!-- Analytics Dashboard (Hidden by default) -->
             <section id="analytics-dashboard" class="analytics-dashboard" style="display: none;">
+                <!-- Revenue Stats -->
+                <div class="analytics-stats-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; padding: 20px; border-radius: 16px; box-shadow: 0 10px 20px rgba(46, 204, 113, 0.2);">
+                        <div style="font-size: 3em; margin-bottom: 10px;">💰</div>
+                        <h3 style="margin: 0; font-size: 2em; font-weight: bold;" id="analytics-monthly-revenue">₹ 0
+                        </h3>
+                        <p style="margin: 5px 0 0; opacity: 0.9;">Revenue (This Month)</p>
+                    </div>
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 20px; border-radius: 16px; box-shadow: 0 10px 20px rgba(52, 152, 219, 0.2);">
+                        <div style="font-size: 3em; margin-bottom: 10px;">🏦</div>
+                        <h3 style="margin: 0; font-size: 2em; font-weight: bold;" id="analytics-total-revenue">₹ 0</h3>
+                        <p style="margin: 5px 0 0; opacity: 0.9;">Total Revenue (Lifetime)</p>
+                    </div>
+                </div>
+
                 <div class="charts-grid">
                     <div class="chart-card">
                         <h3>Plan Popularity</h3>
