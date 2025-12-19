@@ -1,0 +1,32 @@
+{
+  "name": "mother-fitness-admin",
+  "version": "1.0.0",
+  "description": "Mother Fitness Gym Management System - Admin Portal",
+  "main": "main.js",
+  "author": "Mother Fitness",
+  "license": "ISC",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.motherfitness.admin",
+    "productName": "Mother Fitness Admin",
+    "win": {
+      "target": "nsis",
+      "icon": "public/icons/icon-512.png"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/*",
+      "!dist/*"
+    ],
+    "directories": {
+      "output": "dist"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}

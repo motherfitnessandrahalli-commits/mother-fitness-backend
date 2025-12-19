@@ -200,7 +200,6 @@
                     </div>
                 </div>
             </section>
-            <!-- Access Dashboard will be moved to root or managed via view switching -->
         </div>
     </main>
 
@@ -261,34 +260,6 @@
                     <div class="form-group">
                         <label for="customer-validity">Plan Validity (End Date) *</label>
                         <input type="date" id="customer-validity" required>
-                    </div>
-                </div>
-
-                <!-- Initial Payment Section (Only for new customers) -->
-                <div id="initial-payment-section"
-                    style="display: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0; padding-top: 15px;">
-                    <h3
-                        style="font-size: 16px; color: var(--text-primary); margin-bottom: 15px; display: flex; align-items: center;">
-                        <span style="margin-right: 8px;">💳</span> Initial Payment
-                    </h3>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="initial-payment-amount">Amount Paid (₹)</label>
-                            <input type="number" id="initial-payment-amount" placeholder="Enter amount">
-                        </div>
-                        <div class="form-group">
-                            <label for="initial-payment-method">Payment Method</label>
-                            <select id="initial-payment-method" class="ios-select">
-                                <option value="Cash">Cash</option>
-                                <option value="UPI">UPI</option>
-                                <option value="Card">Card</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="initial-payment-receipt">Receipt No (Optional)</label>
-                            <input type="text" id="initial-payment-receipt" placeholder="Receipt Number">
-                        </div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -401,40 +372,47 @@
         </div>
     </div>
 
-    <!-- Access Control Dashboard (Hidden by default) -->
-    <section id="access-dashboard" class="access-dashboard" style="display: none;">
-        <div class="access-header">
-            <h2>🔐 Biometric Access Control</h2>
-            <div class="access-controls">
-                <button class="btn btn-warning" id="connect-door-btn" onclick="app.connectDoor()">
-                    <span class="btn-icon">🔌</span>
-                    Connect Door
+    <!-- QR Code Display Modal -->
+    <div id="qr-modal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Member QR Code</h2>
+                <button class="close-btn" onclick="closeQRModal()">&times;</button>
+            </div>
+            <div class="modal-body qr-modal-body">
+                <div class="qr-customer-info">
+                    <h3 id="qr-customer-name"></h3>
+                    <p id="qr-customer-plan"></p>
+                </div>
+                <div id="qr-code-container" class="qr-code-container"></div>
+                <p class="qr-instructions">Scan this QR code at the gym entrance to mark attendance</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeQRModal()">Close</button>
+                <button type="button" class="btn btn-primary" id="download-qr-btn">
+                    <span class="btn-icon">📥</span>
+                    Download QR Code
                 </button>
-                <button class="btn btn-secondary" onclick="app.toggleAccessView()">Back to Dashboard</button>
             </div>
         </div>
+    </div>
 
-        <div class="access-status-container">
-            <!-- Access Status Card -->
-            <div id="access-card" class="access-card waiting">
-                <div class="access-icon-wrapper">
-                    <div id="access-icon" class="access-icon">🔒</div>
+    <!-- QR Scanner Modal -->
+    <div id="scanner-modal" class="modal">
+        <div class="modal-content modal-scanner">
+            <div class="modal-header">
+                <h2>📷 Scan Member QR Code</h2>
+                <button class="close-btn" onclick="closeScannerModal()">&times;</button>
+            </div>
+            <div class="modal-body scanner-body">
+                <div id="qr-reader" class="qr-reader"></div>
+                <div class="scanner-instructions">
+                    <p>📱 Position the QR code within the frame</p>
+                    <p>🎯 Scanner will automatically detect and process</p>
                 </div>
-                <h2 id="access-title">Waiting for Access...</h2>
-                <div id="access-details" class="access-details">
-                    <p class="access-instruction">Please place your finger on the scanner</p>
-                    <div id="access-member-info" style="display: none;">
-                        <img id="access-member-photo" src="" alt="Member" class="access-member-photo">
-                        <h3 id="access-member-name">Member Name</h3>
-                        <p id="access-plan-status" class="status-badge">Active</p>
-                        <p id="access-expiry">Plan expires on: 2025-01-01</p>
-                    </div>
-                </div>
-                <!-- Hidden Input for Keyboard Wedge -->
-                <input type="text" id="biometric-input" class="biometric-input" autocomplete="off" autofocus>
             </div>
         </div>
-    </section>
+    </div>
 
     <!-- Attendance Success Modal -->
     <div id="attendance-success-modal" class="modal">
@@ -469,9 +447,9 @@
 
                 <div class="menu-divider"></div>
 
-                <div class="menu-item" id="menu-access-btn">
-                    <span class="menu-icon">🔐</span>
-                    <span class="menu-text">Access Control</span>
+                <div class="menu-item" id="menu-scan-qr-btn">
+                    <span class="menu-icon">📷</span>
+                    <span class="menu-text">Scan QR Code</span>
                 </div>
 
                 <div class="menu-item" id="menu-attendance-btn">
@@ -518,14 +496,18 @@
                 <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
                 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-
+                <!-- QR Code Libraries -->
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+                <script src="https://unpkg.com/html5-qrcode"></script>
 
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
                 <!-- EmailJS SDK -->
                 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
-                <script src="api.js"></script>
+                <!-- App Configuration -->
+                <script src="config.js"></script>
+                <script src="api.js?v=2"></script>
                 <script src="app.js"></script>
 
                 <!-- Payment Modal -->
