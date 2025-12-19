@@ -142,6 +142,23 @@ const createPayment = asyncHandler(async (req, res, next) => {
         addedBy: req.user.id,
     });
 
+    // Log payment events to timeline
+    const timeline = require('../services/TimelineService');
+    await timeline.logEvent(
+        customerId,
+        'PAYMENT',
+        `Payment of ₹${amount} Received`,
+        `Paid via ${paymentMethod} for ${planType} plan.`
+    );
+
+    // If it's a plan renewal (already handled in validity logic above)
+    await timeline.logEvent(
+        customerId,
+        'RENEWED',
+        'Membership Renewed',
+        `Plan extended to ${new Date(endDate).toLocaleDateString()}. New Plan: ${planType}`
+    );
+
     // Broadcast real-time update
     try {
         const { getIO } = require('../config/socket');

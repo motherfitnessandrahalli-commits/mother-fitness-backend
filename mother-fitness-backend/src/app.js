@@ -97,6 +97,7 @@ app.use('/api/member', require('./routes/member.routes'));
 app.use('/api/payments', require('./routes/payment.routes'));
 app.use('/api/announcements', require('./routes/announcement.routes'));
 app.use('/api/access', require('./routes/access.routes'));
+app.use('/api/intelligence', require('./routes/intelligence.routes'));
 
 // Serve Member Portal at /member-app (PWA) - AFTER API routes
 app.use('/member-app', express.static(path.join(__dirname, '../public/member-app')));

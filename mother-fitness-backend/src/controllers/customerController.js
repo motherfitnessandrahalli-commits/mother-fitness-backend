@@ -129,6 +129,15 @@ const createCustomer = asyncHandler(async (req, res, next) => {
         createdBy: req.user.id,
     });
 
+    // Log join event to timeline
+    const timeline = require('../services/TimelineService');
+    await timeline.logEvent(
+        customer._id,
+        'JOINED',
+        'Joined Mother Fitness Gym',
+        `Registered for ${customer.plan} plan starting today.`
+    );
+
     let payment = null;
 
     // Handle Initial Payment

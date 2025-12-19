@@ -57,6 +57,15 @@ const verifyAccess = asyncHandler(async (req, res, next) => {
             });
             customer.totalVisits += 1;
             await customer.save();
+
+            // Log check-in event to timeline
+            const timeline = require('../services/TimelineService');
+            await timeline.logEvent(
+                customer._id,
+                'CHECK_IN',
+                'Checked In',
+                `Entered gym via Biometric Access. Status: ${status}`
+            );
         }
 
         // 4. Open Door
@@ -88,6 +97,15 @@ const verifyAccess = asyncHandler(async (req, res, next) => {
             },
             message: 'Membership Expired'
         });
+
+        // Log denied event to timeline
+        const timeline = require('../services/TimelineService');
+        await timeline.logEvent(
+            customer._id,
+            'DENIED',
+            'Entry Denied',
+            `Denied entry due to ${status} membership.`
+        );
 
         return sendSuccess(res, 200, { access: 'DENY', reason: 'Membership Expired' }, 'Access denied');
     }

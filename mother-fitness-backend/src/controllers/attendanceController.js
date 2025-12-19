@@ -40,8 +40,17 @@ const markAttendance = asyncHandler(async (req, res, next) => {
         date: todayStr,
         time: getLocalTimeString(),
         membershipStatus: customer.status, // Uses virtual field from Customer model
-        markedBy: req.user.id
+        markedBy: req.user ? req.user.id : null
     });
+
+    // Log check-in event to timeline
+    const timeline = require('../services/TimelineService');
+    await timeline.logEvent(
+        customer._id,
+        'CHECK_IN',
+        'Checked In',
+        `Entered gym at ${attendance.time}. Status: ${customer.status}`
+    );
 
     // 4. Check and award badges
     const BADGE_MILESTONES = {
@@ -67,7 +76,6 @@ const markAttendance = asyncHandler(async (req, res, next) => {
 
     for (const badge of badges) {
         const threshold = BADGE_MILESTONES[badge];
-        // FIX: Changed from === to >= to allow retroactive awarding if milestone was skipped
         if (customer.totalVisits >= threshold && !customer.badgesEarned.includes(badge)) {
             customer.badgesEarned.push(badge);
             badgeEarned = {
@@ -76,10 +84,14 @@ const markAttendance = asyncHandler(async (req, res, next) => {
                 visits: customer.totalVisits,
                 message: BADGE_MESSAGES[badge]
             };
-            // Note: We don't break here to allow unlocking multiple badges at once if needed
-            // But if we want to show only one popup at a time, we keep the break.
-            // Let's allow multiple but only return the highest one for the popup to avoid spam.
-            // For now, keeping the break means they get one per visit, which is good for engagement.
+
+            // Log badge event to timeline
+            await timeline.logEvent(
+                customer._id,
+                'BADGE_EARNED',
+                `Earned ${badge} Badge!`,
+                BADGE_MESSAGES[badge]
+            );
             break;
         }
     }
@@ -93,7 +105,6 @@ const markAttendance = asyncHandler(async (req, res, next) => {
         io.emit('attendance:new', attendance);
         io.emit('dashboard:update', { type: 'attendance' });
     } catch (error) {
-        // Socket error shouldn't fail the request
         console.error('Socket emit error:', error.message);
     }
 

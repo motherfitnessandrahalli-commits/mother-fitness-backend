@@ -101,6 +101,7 @@ class GymApp {
             this.checkExpiringPlans();
             this.render();
             this.setupAnalyticsListener(); // Fix analytics button
+            this.setupIntelligenceListener(); // Add intelligence button
             this.initSocket();
             this.setupAccessListener();
         } catch (error) {
@@ -139,6 +140,151 @@ class GymApp {
                 setTimeout(() => this.biometricSystem.resetUI(), 4000);
             }
         });
+    }
+
+    setupIntelligenceListener() {
+        setTimeout(() => {
+            const btn = document.getElementById('menu-intelligence-btn');
+            if (btn) {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+
+                newBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.toggleIntelligenceView();
+                    this.closeHamburgerMenu();
+                });
+            }
+        }, 1500);
+    }
+
+    toggleIntelligenceView() {
+        const dashboard = document.getElementById('intelligence-dashboard');
+        const mainContent = document.querySelector('.dashboard-stats');
+        const searchBox = document.querySelector('.controls-section');
+        const customerList = document.querySelector('.customer-list-section');
+        const analytics = document.getElementById('analytics-dashboard');
+        const attendance = document.getElementById('attendance-dashboard');
+
+        if (dashboard.style.display === 'none') {
+            // Hide everything else
+            mainContent.style.display = 'none';
+            searchBox.style.display = 'none';
+            customerList.style.display = 'none';
+            if (analytics) analytics.style.display = 'none';
+            if (attendance) attendance.style.display = 'none';
+
+            dashboard.style.display = 'block';
+            this.loadIntelligenceData();
+            this.currentView = 'intelligence';
+        } else {
+            // Show main view
+            mainContent.style.display = 'grid';
+            searchBox.style.display = 'flex';
+            customerList.style.display = 'block';
+            dashboard.style.display = 'none';
+            this.currentView = 'list';
+        }
+    }
+
+    async loadIntelligenceData() {
+        try {
+            const data = await this.api.getBusinessHealth();
+            const { health, risks } = data;
+
+            // Update Health Score
+            const circle = document.getElementById('health-score-circle');
+            const valText = document.getElementById('health-score-val');
+            const statusText = document.getElementById('health-status');
+
+            if (circle && valText && statusText) {
+                const score = health.score;
+                circle.style.strokeDasharray = `${score}, 100`;
+                valText.textContent = `${score}%`;
+                statusText.textContent = health.status;
+
+                // Color coding
+                if (score < 40) statusText.style.color = 'var(--danger-color)';
+                else if (score < 60) statusText.style.color = 'var(--warning-color)';
+                else statusText.style.color = 'var(--success-color)';
+            }
+
+            // Update Churn Risk
+            const churnCount = document.getElementById('churn-count');
+            const churnList = document.getElementById('churn-list');
+
+            if (churnCount) churnCount.textContent = risks.churnCount;
+            if (churnList) {
+                churnList.innerHTML = risks.churnMembers.length > 0
+                    ? risks.churnMembers.map(m => `
+                        <div class="mini-item">
+                            <span class="name">${m.name}</span>
+                            <span class="meta">Last visit: ${m.lastVisit ? new Date(m.lastVisit).toLocaleDateString() : 'Never'}</span>
+                        </div>
+                    `).join('')
+                    : '<p class="empty-text">No high risk members detected.</p>';
+            }
+
+            // Update Leakage
+            const leakageCount = document.getElementById('leakage-count');
+            if (leakageCount) leakageCount.textContent = risks.leakageCount;
+
+        } catch (error) {
+            console.error('Failed to load intelligence data:', error);
+            this.showNotification('error', 'Intelligence Error', 'Could not load gym health metrics.');
+        }
+    }
+
+    showCustomerTab(tab) {
+        const profileBtn = document.getElementById('profile-tab-btn');
+        const timelineBtn = document.getElementById('timeline-tab-btn');
+        const profileContent = document.getElementById('customer-profile-content');
+        const timelineContent = document.getElementById('customer-timeline-content');
+
+        if (tab === 'profile') {
+            profileBtn.classList.add('active');
+            timelineBtn.classList.remove('active');
+            profileContent.style.display = 'block';
+            timelineContent.style.display = 'none';
+        } else {
+            profileBtn.classList.remove('active');
+            timelineBtn.classList.add('active');
+            profileContent.style.display = 'none';
+            timelineContent.style.display = 'block';
+            if (this.editingCustomerId) {
+                this.loadMemberTimeline(this.editingCustomerId);
+            }
+        }
+    }
+
+    async loadMemberTimeline(customerId) {
+        const timelineList = document.getElementById('member-timeline');
+        timelineList.innerHTML = '<p class="loading-text">Loading journey...</p>';
+
+        try {
+            const data = await this.api.getMemberTimeline(customerId);
+            const events = data.timeline;
+
+            if (events.length === 0) {
+                timelineList.innerHTML = '<p class="empty-text">No history recorded yet.</p>';
+                return;
+            }
+
+            timelineList.innerHTML = events.map(event => `
+                <div class="timeline-item ${event.type.toLowerCase()}">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="time">${new Date(event.timestamp).toLocaleString()}</div>
+                        <div class="title">${event.title}</div>
+                        <div class="details">${event.details || ''}</div>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Failed to load timeline:', error);
+            timelineList.innerHTML = '<p class="error-text">Failed to load journey history.</p>';
+        }
     }
 
     setupAnalyticsListener() {

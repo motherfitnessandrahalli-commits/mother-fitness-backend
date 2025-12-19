@@ -50,6 +50,10 @@ const API_CONFIG = {
         VERIFY_ACCESS: '/api/access/verify',
         CONNECT_DOOR: '/api/access/connect',
         GET_PORTS: '/api/access/ports',
+
+        // Intelligence
+        GET_TIMELINE: (customerId) => `/api/intelligence/timeline/${customerId}`,
+        GET_BUSINESS_HEALTH: '/api/intelligence/business-health',
     }
 };
 
@@ -402,5 +406,17 @@ class API {
 
     async getAccessPorts() {
         return await this.request(API_CONFIG.ENDPOINTS.GET_PORTS);
+    }
+
+    // ===================================
+    // Intelligence Methods
+    // ===================================
+
+    async getMemberTimeline(customerId) {
+        return await this.request(API_CONFIG.ENDPOINTS.GET_TIMELINE(customerId));
+    }
+
+    async getBusinessHealth() {
+        return await this.request(API_CONFIG.ENDPOINTS.GET_BUSINESS_HEALTH);
     }
 }
