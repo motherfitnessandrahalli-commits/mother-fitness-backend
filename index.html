@@ -410,11 +410,15 @@
         <div class="access-header">
             <h2>🔐 Biometric Access Control</h2>
             <div class="access-controls">
-                <button class="btn btn-warning" id="connect-door-btn" onclick="app.connectDoor()">
+                <select id="access-port-select" class="form-control"
+                    style="width: auto; display: inline-block; margin-right: 10px;">
+                    <option value="">Select Port</option>
+                </select>
+                <button id="connect-door-btn" class="btn btn-secondary">
                     <span class="btn-icon">🔌</span>
                     Connect Door
                 </button>
-                <button class="btn btn-secondary" onclick="app.toggleAccessView()">Back to Dashboard</button>
+                <button class="btn btn-outline" onclick="app.toggleAccessView()">Back to Dashboard</button>
             </div>
         </div>
 

@@ -45,6 +45,11 @@ const API_CONFIG = {
         PAYMENT_BY_ID: (id) => `/api/payments/${id}`,
         CUSTOMER_PAYMENTS: (customerId) => `/api/payments/customer/${customerId}`,
         PAYMENT_STATS: '/api/payments/stats/overview',
+
+        // Access Control
+        VERIFY_ACCESS: '/api/access/verify',
+        CONNECT_DOOR: '/api/access/connect',
+        GET_PORTS: '/api/access/ports',
     }
 };
 
@@ -375,5 +380,27 @@ class API {
         return await this.request(`/api/announcements/${id}`, {
             method: 'DELETE',
         });
+    }
+
+    // ===================================
+    // Access Control Methods
+    // ===================================
+
+    async verifyAccess(memberId) {
+        return await this.request(API_CONFIG.ENDPOINTS.VERIFY_ACCESS, {
+            method: 'POST',
+            body: JSON.stringify({ memberId }),
+        });
+    }
+
+    async connectDoor(portName) {
+        return await this.request(API_CONFIG.ENDPOINTS.CONNECT_DOOR, {
+            method: 'POST',
+            body: JSON.stringify({ portName }),
+        });
+    }
+
+    async getAccessPorts() {
+        return await this.request(API_CONFIG.ENDPOINTS.GET_PORTS);
     }
 }

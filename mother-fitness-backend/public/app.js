@@ -68,8 +68,8 @@ class GymApp {
         this.isAuthenticated = false;
 
         // Biometric & Access Control
-        this.doorController = new DoorController();
-        this.biometricSystem = new BiometricSystem(this, this.doorController);
+        this.socket = null;
+        this.biometricSystem = new BiometricSystem(this);
 
         this.init();
     }
@@ -101,11 +101,44 @@ class GymApp {
             this.checkExpiringPlans();
             this.render();
             this.setupAnalyticsListener(); // Fix analytics button
+            this.initSocket();
             this.setupAccessListener();
         } catch (error) {
             console.error('Failed to initialize app:', error);
             this.showNotification('error', 'Error', `Failed to load application: ${error.message}`);
         }
+    }
+
+    initSocket() {
+        if (this.socket) return;
+
+        const token = this.api.token;
+        if (!token) return;
+
+        this.socket = io({
+            query: { token }
+        });
+
+        this.socket.on('connect', () => {
+            console.log('Connected to backend sockets');
+        });
+
+        // Listen for access granted/denied if dashboard is open
+        this.socket.on('access:granted', (data) => {
+            if (this.biometricSystem.isListening) {
+                this.biometricSystem.setUIState('granted', data.customer);
+                this.showNotification('success', 'Access Granted', `Welcome, ${data.customer.name}!`);
+                setTimeout(() => this.biometricSystem.resetUI(), 4000);
+            }
+            this.updateAttendanceStats();
+        });
+
+        this.socket.on('access:denied', (data) => {
+            if (this.biometricSystem.isListening) {
+                this.biometricSystem.setUIState('denied', data.customer, data.message);
+                setTimeout(() => this.biometricSystem.resetUI(), 4000);
+            }
+        });
     }
 
     setupAnalyticsListener() {
@@ -344,16 +377,48 @@ class GymApp {
 
 
     // Access Control Methods
-    async connectDoor() {
-        const success = await this.doorController.connect();
-        if (success) {
-            this.showNotification('success', 'Hardware Connected', 'Door Controller is now active.');
+    async loadPorts() {
+        try {
+            const response = await this.api.getAccessPorts();
+            const select = document.getElementById('access-port-select');
+            if (select) {
+                select.innerHTML = '<option value="">Select Port</option>';
+                response.data.ports.forEach(port => {
+                    const opt = document.createElement('option');
+                    opt.value = port.path;
+                    opt.textContent = `${port.path} (${port.friendlyName || 'Unknown Device'})`;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load ports:', error);
+        }
+    }
+
+    async connectHardware() {
+        const portSelect = document.getElementById('access-port-select');
+        const portName = portSelect ? portSelect.value : null;
+
+        if (!portName) {
+            this.showNotification('error', 'Selection Required', 'Please select a COM port first.');
+            return;
+        }
+
+        try {
+            this.setLoading(true);
+            await this.api.connectDoor(portName);
+            this.showNotification('success', 'Hardware Connected', `Connected to ${portName}`);
+
             const btn = document.getElementById('connect-door-btn');
             if (btn) {
-                btn.classList.remove('btn-warning');
+                btn.classList.remove('btn-secondary');
                 btn.classList.add('btn-success');
                 btn.innerHTML = '<span class="btn-icon">✅</span> Connected';
             }
+        } catch (error) {
+            this.showNotification('error', 'Connection Failed', error.message || 'Could not connect to door controller');
+        } finally {
+            this.setLoading(false);
         }
     }
 
@@ -366,7 +431,14 @@ class GymApp {
             document.querySelector('.customer-list-section').style.display = 'none';
 
             dashboard.style.display = 'block';
+            this.loadPorts(); // Populate port dropdown
             this.biometricSystem.start();
+
+            // Re-attach connect button listener
+            const connectBtn = document.getElementById('connect-door-btn');
+            if (connectBtn) {
+                connectBtn.onclick = () => this.connectHardware();
+            }
         } else {
             // Show main dashboard elements
             dashboard.style.display = 'none';
@@ -3052,59 +3124,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // Access Control & Hardware Integration
 // ===================================
 
-class DoorController {
-    constructor() {
-        this.port = null;
-        this.writer = null;
-        this.isConnected = false;
-    }
-
-    async connect() {
-        if (!navigator.serial) {
-            alert('Web Serial API is not supported in this browser. Please use Chrome or Edge.');
-            return false;
-        }
-
-        try {
-            this.port = await navigator.serial.requestPort();
-            await this.port.open({ baudRate: 9600 });
-
-            const textEncoder = new TextEncoderStream();
-            const writableStreamClosed = textEncoder.readable.pipeTo(this.port.writable);
-            this.writer = textEncoder.writable.getWriter();
-
-            this.isConnected = true;
-            return true;
-        } catch (error) {
-            console.error('Failed to connect to door controller:', error);
-            if (error.name !== 'NotFoundError') {
-                alert(`Connection failed: ${error.message}`);
-            }
-            return false;
-        }
-    }
-
-    async openDoor() {
-        if (!this.isConnected || !this.writer) {
-            console.warn('Door controller not connected via Serial API. Simulating open...');
-            return;
-        }
-
-        try {
-            await this.writer.write("O");
-            console.log('Door open signal sent');
-        } catch (error) {
-            console.error('Failed to send door signal:', error);
-        }
-    }
-}
-
 class BiometricSystem {
-    constructor(app, doorController) {
+    constructor(app) {
         this.app = app;
-        this.door = doorController;
         this.isListening = false;
-        this.inputBuffer = '';
         this.ui = {
             card: document.getElementById('access-card'),
             icon: document.getElementById('access-icon'),
@@ -3130,7 +3153,8 @@ class BiometricSystem {
             });
 
             document.addEventListener('click', (e) => {
-                if (this.isListening && document.getElementById('access-dashboard').style.display !== 'none') {
+                const dashboard = document.getElementById('access-dashboard');
+                if (this.isListening && dashboard && dashboard.style.display !== 'none') {
                     this.ui.input.focus();
                 }
             });
@@ -3149,49 +3173,23 @@ class BiometricSystem {
 
     async processInput(memberId) {
         if (!memberId) return;
-        console.log('Processing Biometric ID:', memberId);
         this.setUIState('processing');
 
         try {
-            let customer = this.app.customers.find(c => c.memberId === memberId || c.id === memberId || c.phone === memberId);
-
-            if (!customer) {
-                this.denyAccess('Member not found');
-                return;
-            }
-
-            const status = customer.getStatus();
-            if (status === 'active' || status === 'expiring') {
-                await this.grantAccess(customer);
-            } else {
-                this.denyAccess('Plan Expired - Renew Your Card', customer);
-            }
+            // Call backend for verification and door control
+            await this.app.api.verifyAccess(memberId);
+            // Outcome is handled by Socket.io events in GymApp.initSocket
         } catch (error) {
-            console.error('Access verification logic error:', error);
-            this.denyAccess('System Error');
+            console.error('Access verification error:', error);
+            this.setUIState('denied', null, error.message || 'Verification Failed');
+            setTimeout(() => this.resetUI(), 4000);
         }
-    }
-
-    async grantAccess(customer) {
-        this.setUIState('granted', customer);
-        await this.door.openDoor();
-        try {
-            await this.app.api.markAttendance(customer.id);
-            this.app.updateAttendanceStats();
-            this.app.showNotification('success', 'Access Granted', `Welcome, ${customer.name}!`);
-        } catch (error) {
-            console.error('Attendance log failed:', error);
-        }
-        setTimeout(() => this.resetUI(), 4000);
-    }
-
-    denyAccess(reason, customer = null) {
-        this.setUIState('denied', customer, reason);
-        setTimeout(() => this.resetUI(), 4000);
     }
 
     setUIState(state, customer = null, message = '') {
         const { card, icon, title, details, name, photo, status, expiry } = this.ui;
+        if (!card) return;
+
         card.classList.remove('waiting', 'granted', 'denied');
 
         if (state === 'waiting') {
@@ -3207,7 +3205,7 @@ class BiometricSystem {
                 details.style.display = 'block';
                 name.textContent = customer.name;
                 photo.src = customer.photo || 'assets/default-user.png';
-                if (!customer.photo) photo.style.display = 'none'; else photo.style.display = 'block';
+                photo.style.display = customer.photo ? 'block' : 'none';
                 status.textContent = 'Active Member';
                 status.className = 'status-badge active';
                 expiry.textContent = `Valid until: ${new Date(customer.validity).toLocaleDateString()}`;
@@ -3219,7 +3217,8 @@ class BiometricSystem {
             details.style.display = 'block';
             if (customer) {
                 name.textContent = customer.name;
-                photo.src = customer.photo || '';
+                photo.src = customer.photo || 'assets/default-user.png';
+                photo.style.display = customer.photo ? 'block' : 'none';
                 status.textContent = 'Membership Expired';
                 status.className = 'status-badge expired';
                 expiry.textContent = message || 'Please renew your subscription';

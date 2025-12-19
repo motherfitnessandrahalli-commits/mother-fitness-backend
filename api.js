@@ -4,8 +4,10 @@
 // ===================================
 
 const API_CONFIG = {
-    // Backend API URL
-    BASE_URL: 'https://ultra-fitness-backend-b8vy.onrender.com',
+    // Backend API URL - Loaded from config.js
+    BASE_URL: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:5000'
+        : 'https://mother-fitness-backend.onrender.com',
     ENDPOINTS: {
         // Auth
         LOGIN: '/api/auth/login',
@@ -43,6 +45,11 @@ const API_CONFIG = {
         PAYMENT_BY_ID: (id) => `/api/payments/${id}`,
         CUSTOMER_PAYMENTS: (customerId) => `/api/payments/customer/${customerId}`,
         PAYMENT_STATS: '/api/payments/stats/overview',
+
+        // Access Control
+        VERIFY_ACCESS: '/api/access/verify',
+        CONNECT_DOOR: '/api/access/connect',
+        GET_PORTS: '/api/access/ports',
     }
 };
 
@@ -80,7 +87,7 @@ class API {
 
     // Generic request method
     async request(endpoint, options = {}) {
-        const url = `${this.baseURL}${endpoint} `;
+        const url = `${this.baseURL}${endpoint}`;
         const headers = {
             'Content-Type': 'application/json',
             ...options.headers,
@@ -89,7 +96,7 @@ class API {
         // Add auth token if available
         const token = this.getToken();
         if (token) {
-            headers['Authorization'] = `Bearer ${token} `;
+            headers['Authorization'] = `Bearer ${token}`;
         }
 
         const config = {
@@ -178,7 +185,7 @@ class API {
     async getCustomers(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const endpoint = queryString
-            ? `${API_CONFIG.ENDPOINTS.CUSTOMERS}?${queryString} `
+            ? `${API_CONFIG.ENDPOINTS.CUSTOMERS}?${queryString}`
             : API_CONFIG.ENDPOINTS.CUSTOMERS;
 
         return await this.request(endpoint);
@@ -232,15 +239,15 @@ class API {
     async getAttendance(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const endpoint = queryString
-            ? `${API_CONFIG.ENDPOINTS.ATTENDANCE}?${queryString} `
+            ? `${API_CONFIG.ENDPOINTS.ATTENDANCE}?${queryString}`
             : API_CONFIG.ENDPOINTS.ATTENDANCE;
 
         return await this.request(endpoint);
     }
 
     async getAttendanceStats(date) {
-        const queryString = date ? `? date = ${date} ` : '';
-        return await this.request(`${API_CONFIG.ENDPOINTS.ATTENDANCE_STATS}${queryString} `);
+        const queryString = date ? `?date=${date}` : '';
+        return await this.request(`${API_CONFIG.ENDPOINTS.ATTENDANCE_STATS}${queryString}`);
     }
 
     async getCustomerAttendance(customerId) {
@@ -275,13 +282,13 @@ class API {
         const formData = new FormData();
         formData.append('photo', file);
 
-        const url = `${this.baseURL}${API_CONFIG.ENDPOINTS.UPLOAD_PHOTO} `;
+        const url = `${this.baseURL}${API_CONFIG.ENDPOINTS.UPLOAD_PHOTO}`;
         const token = this.getToken();
 
         const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token} `,
+                'Authorization': `Bearer ${token}`,
             },
             body: formData,
         });
@@ -318,7 +325,7 @@ class API {
     async getPayments(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         const endpoint = queryString
-            ? `${API_CONFIG.ENDPOINTS.PAYMENTS}?${queryString} `
+            ? `${API_CONFIG.ENDPOINTS.PAYMENTS}?${queryString}`
             : API_CONFIG.ENDPOINTS.PAYMENTS;
 
         return await this.request(endpoint);
@@ -373,5 +380,27 @@ class API {
         return await this.request(`/api/announcements/${id}`, {
             method: 'DELETE',
         });
+    }
+
+    // ===================================
+    // Access Control Methods
+    // ===================================
+
+    async verifyAccess(memberId) {
+        return await this.request(API_CONFIG.ENDPOINTS.VERIFY_ACCESS, {
+            method: 'POST',
+            body: JSON.stringify({ memberId }),
+        });
+    }
+
+    async connectDoor(portName) {
+        return await this.request(API_CONFIG.ENDPOINTS.CONNECT_DOOR, {
+            method: 'POST',
+            body: JSON.stringify({ portName }),
+        });
+    }
+
+    async getAccessPorts() {
+        return await this.request(API_CONFIG.ENDPOINTS.GET_PORTS);
     }
 }
