@@ -537,250 +537,249 @@
                         <span class="menu-icon">🔒</span>
                         <span class="menu-text">Change Password</span>
                     </div>
-                    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-                    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                </div>
+            </div>
+        </div>
 
+        <div id="payment-modal" class="modal">
+            <div class="modal-content payment-modal-content">
+                <!-- Decorative Elements -->
+                <div class="payment-modal-decoration">
+                    <div class="payment-glow payment-glow-1"></div>
+                    <div class="payment-glow payment-glow-2"></div>
+                </div>
 
+                <div class="modal-header payment-modal-header">
+                    <div class="payment-modal-title-wrapper">
+                        <span class="payment-modal-icon">💳</span>
+                        <h2>Record Payment</h2>
+                    </div>
+                    <button class="close-modal payment-close-btn" onclick="app.closePaymentModal()" aria-label="Close">
+                        <span>&times;</span>
+                    </button>
+                </div>
 
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+                <form id="payment-form" class="payment-form" onsubmit="app.handlePaymentSubmit(event)">
+                    <input type="hidden" id="payment-customer-id">
 
-                    <!-- EmailJS SDK -->
-                    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-
-                    <script src="api.js"></script>
-                    <script src="app.js"></script>
-
-                    <!-- Payment Modal -->
-                    <div id="payment-modal" class="modal">
-                        <div class="modal-content payment-modal-content">
-                            <!-- Decorative Elements -->
-                            <div class="payment-modal-decoration">
-                                <div class="payment-glow payment-glow-1"></div>
-                                <div class="payment-glow payment-glow-2"></div>
-                            </div>
-
-                            <div class="modal-header payment-modal-header">
-                                <div class="payment-modal-title-wrapper">
-                                    <span class="payment-modal-icon">💳</span>
-                                    <h2>Record Payment</h2>
-                                </div>
-                                <button class="close-modal payment-close-btn" onclick="app.closePaymentModal()"
-                                    aria-label="Close">
-                                    <span>&times;</span>
-                                </button>
-                            </div>
-
-                            <form id="payment-form" class="payment-form" onsubmit="app.handlePaymentSubmit(event)">
-                                <input type="hidden" id="payment-customer-id">
-
-                                <!-- Customer Name Field -->
-                                <div class="form-group payment-form-group">
-                                    <label class="payment-label">
-                                        <span class="payment-label-icon">👤</span>
-                                        Customer Name
-                                    </label>
-                                    <div class="payment-input-wrapper">
-                                        <input type="text" id="payment-customer-name"
-                                            class="payment-input payment-input-readonly" readonly>
-                                    </div>
-                                </div>
-
-                                <!-- Amount and Date Row -->
-                                <div class="payment-form-row">
-                                    <div class="form-group payment-form-group">
-                                        <label class="payment-label">
-                                            <span class="payment-label-icon">💰</span>
-                                            Amount (₹)
-                                        </label>
-                                        <div class="payment-input-wrapper">
-                                            <input type="number" id="payment-amount" class="payment-input" required
-                                                placeholder="Enter amount">
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group payment-form-group">
-                                        <label class="payment-label">
-                                            <span class="payment-label-icon">📅</span>
-                                            Payment Date
-                                        </label>
-                                        <div class="payment-input-wrapper">
-                                            <input type="date" id="payment-date" class="payment-input" required>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Method and Plan Row -->
-                                <div class="payment-form-row">
-                                    <div class="form-group payment-form-group">
-                                        <label class="payment-label">
-                                            <span class="payment-label-icon">💳</span>
-                                            Payment Method
-                                        </label>
-                                        <div class="payment-input-wrapper">
-                                            <select id="payment-method" class="payment-input payment-select" required>
-                                                <option value="Cash">Cash</option>
-                                                <option value="UPI">UPI</option>
-                                                <option value="Card">Card</option>
-                                                <option value="Bank Transfer">Bank Transfer</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group payment-form-group">
-                                        <label class="payment-label">
-                                            <span class="payment-label-icon">📋</span>
-                                            Plan Type
-                                        </label>
-                                        <div class="payment-input-wrapper">
-                                            <select id="payment-plan" class="payment-input payment-select" required>
-                                                <option value="Monthly">Monthly</option>
-                                                <option value="Quarterly">Quarterly</option>
-                                                <option value="Half-Yearly">Half-Yearly</option>
-                                                <option value="Yearly">Yearly</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Receipt Number -->
-                                <div class="form-group payment-form-group">
-                                    <label class="payment-label">
-                                        <span class="payment-label-icon">🧾</span>
-                                        Receipt Number <span class="payment-optional">(Optional)</span>
-                                    </label>
-                                    <div class="payment-input-wrapper">
-                                        <input type="text" id="payment-receipt" class="payment-input"
-                                            placeholder="Enter receipt number">
-                                    </div>
-                                </div>
-
-                                <!-- Notes -->
-                                <div class="form-group payment-form-group">
-                                    <label class="payment-label">
-                                        <span class="payment-label-icon">📝</span>
-                                        Notes
-                                    </label>
-                                    <div class="payment-input-wrapper">
-                                        <textarea id="payment-notes" rows="3" class="payment-input payment-textarea"
-                                            placeholder="Additional notes (optional)"></textarea>
-                                    </div>
-                                </div>
-
-                                <!-- Submit Button -->
-                                <button type="submit" class="payment-submit-btn">
-                                    <span class="payment-submit-icon">✓</span>
-                                    <span class="payment-submit-text">Save Payment</span>
-                                    <div class="payment-submit-shine"></div>
-                                </button>
-                            </form>
+                    <!-- Customer Name Field -->
+                    <div class="form-group payment-form-group">
+                        <label class="payment-label">
+                            <span class="payment-label-icon">👤</span>
+                            Customer Name
+                        </label>
+                        <div class="payment-input-wrapper">
+                            <input type="text" id="payment-customer-name" class="payment-input payment-input-readonly"
+                                readonly>
                         </div>
                     </div>
 
-                    <!-- Payment View Overlay -->
-                    <div id="payment-view" class="view-overlay">
-                        <div class="view-header">
-                            <h2>Payment History</h2>
-                            <div style="flex: 1;"></div>
-                            <button class="btn btn-primary" onclick="app.exportPayments()" style="margin-right: 15px;">
-                                <span class="btn-icon">📊</span> Export to Excel
-                            </button>
-                            <button class="btn-icon" onclick="app.togglePaymentView()">✕</button>
-                        </div>
-                        <div class="view-content">
-                            <div class="search-bar">
-                                <input type="text" id="payment-search"
-                                    placeholder="🔍 Search payments by customer name, amount, or method..."
-                                    onkeyup="app.filterPayments()">
+                    <!-- Amount and Date Row -->
+                    <div class="payment-form-row">
+                        <div class="form-group payment-form-group">
+                            <label class="payment-label">
+                                <span class="payment-label-icon">💰</span>
+                                Amount (₹)
+                            </label>
+                            <div class="payment-input-wrapper">
+                                <input type="number" id="payment-amount" class="payment-input" required
+                                    placeholder="Enter amount">
                             </div>
-                            <div class="table-container">
-                                <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Customer</th>
-                                            <th>Amount</th>
-                                            <th>Method</th>
-                                            <th>Plan</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="payment-table-body">
-                                        <!-- Payments will be populated here -->
-                                    </tbody>
-                                </table>
+                        </div>
+
+                        <div class="form-group payment-form-group">
+                            <label class="payment-label">
+                                <span class="payment-label-icon">📅</span>
+                                Payment Date
+                            </label>
+                            <div class="payment-input-wrapper">
+                                <input type="date" id="payment-date" class="payment-input" required>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Announcements View Overlay -->
-                    <div id="announcement-view" class="announcement-view-overlay" style="display: none;">
-                        <div class="announcement-view-header">
-                            <h2>📢 Announcements</h2>
-                            <button class="close-view-btn" onclick="app.toggleAnnouncementView()">✕</button>
-                        </div>
-                        <div class="announcement-view-content">
-
-                            <!-- Create Announcement Card -->
-                            <div class="announcement-create-card">
-                                <h3>✨ Create New Announcement</h3>
-                                <form id="announcement-form" onsubmit="app.handleAnnouncementSubmit(event)"
-                                    class="announcement-form">
-                                    <div class="form-row">
-                                        <div class="form-group full-width">
-                                            <label class="form-label">📝 Title</label>
-                                            <input type="text" id="ann-title" required class="form-input"
-                                                placeholder="Enter announcement title..." maxlength="100">
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-group full-width">
-                                            <label class="form-label">💬 Message</label>
-                                            <textarea id="ann-message" required class="form-textarea" rows="3"
-                                                placeholder="Enter announcement message..." maxlength="500"></textarea>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row two-cols">
-                                        <div class="form-group">
-                                            <label class="form-label">📅 Start Date</label>
-                                            <input type="date" id="ann-start-date" required class="form-input">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">📅 End Date</label>
-                                            <input type="date" id="ann-end-date" required class="form-input">
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-group full-width">
-                                            <label class="form-label">🏷️ Type</label>
-                                            <select id="ann-type" class="form-select">
-                                                <option value="info">ℹ️ Information</option>
-                                                <option value="important">⚠️ Important</option>
-                                                <option value="offer">🏷️ Offer</option>
-                                                <option value="event">🎉 Event</option>
-                                                <option value="maintenance">🔧 Maintenance</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <button type="submit" class="btn btn-primary btn-announcement-submit">
-                                        <span class="btn-icon">📢</span> Post Announcement
-                                    </button>
-                                </form>
+                    <!-- Method and Plan Row -->
+                    <div class="payment-form-row">
+                        <div class="form-group payment-form-group">
+                            <label class="payment-label">
+                                <span class="payment-label-icon">💳</span>
+                                Payment Method
+                            </label>
+                            <div class="payment-input-wrapper">
+                                <select id="payment-method" class="payment-input payment-select" required>
+                                    <option value="Cash">Cash</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Card">Card</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                </select>
                             </div>
+                        </div>
 
-                            <!-- Active Announcements Section -->
-                            <div class="announcement-list-section">
-                                <h3>📋 Active & Recent Announcements</h3>
-                                <div id="announcement-list" class="announcement-list">
-                                    <p class="loading-text">Loading announcements...</p>
-                                </div>
+                        <div class="form-group payment-form-group">
+                            <label class="payment-label">
+                                <span class="payment-label-icon">📋</span>
+                                Plan Type
+                            </label>
+                            <div class="payment-input-wrapper">
+                                <select id="payment-plan" class="payment-input payment-select" required>
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Half-Yearly">Half-Yearly</option>
+                                    <option value="Yearly">Yearly</option>
+                                </select>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Receipt Number -->
+                    <div class="form-group payment-form-group">
+                        <label class="payment-label">
+                            <span class="payment-label-icon">🧾</span>
+                            Receipt Number <span class="payment-optional">(Optional)</span>
+                        </label>
+                        <div class="payment-input-wrapper">
+                            <input type="text" id="payment-receipt" class="payment-input"
+                                placeholder="Enter receipt number">
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="form-group payment-form-group">
+                        <label class="payment-label">
+                            <span class="payment-label-icon">📝</span>
+                            Notes
+                        </label>
+                        <div class="payment-input-wrapper">
+                            <textarea id="payment-notes" rows="3" class="payment-input payment-textarea"
+                                placeholder="Additional notes (optional)"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="payment-submit-btn">
+                        <span class="payment-submit-icon">✓</span>
+                        <span class="payment-submit-text">Save Payment</span>
+                        <div class="payment-submit-shine"></div>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Payment View Overlay -->
+        <div id="payment-view" class="view-overlay">
+            <div class="view-header">
+                <h2>Payment History</h2>
+                <div style="flex: 1;"></div>
+                <button class="btn btn-primary" onclick="app.exportPayments()" style="margin-right: 15px;">
+                    <span class="btn-icon">📊</span> Export to Excel
+                </button>
+                <button class="btn-icon" onclick="app.togglePaymentView()">✕</button>
+            </div>
+            <div class="view-content">
+                <div class="search-bar">
+                    <input type="text" id="payment-search"
+                        placeholder="🔍 Search payments by customer name, amount, or method..."
+                        onkeyup="app.filterPayments()">
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Plan</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payment-table-body">
+                            <!-- Payments will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Announcements View Overlay -->
+        <div id="announcement-view" class="announcement-view-overlay" style="display: none;">
+            <div class="announcement-view-header">
+                <h2>📢 Announcements</h2>
+                <button class="close-view-btn" onclick="app.toggleAnnouncementView()">✕</button>
+            </div>
+            <div class="announcement-view-content">
+
+                <!-- Create Announcement Card -->
+                <div class="announcement-create-card">
+                    <h3>✨ Create New Announcement</h3>
+                    <form id="announcement-form" onsubmit="app.handleAnnouncementSubmit(event)"
+                        class="announcement-form">
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label class="form-label">📝 Title</label>
+                                <input type="text" id="ann-title" required class="form-input"
+                                    placeholder="Enter announcement title..." maxlength="100">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label class="form-label">💬 Message</label>
+                                <textarea id="ann-message" required class="form-textarea" rows="3"
+                                    placeholder="Enter announcement message..." maxlength="500"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-row two-cols">
+                            <div class="form-group">
+                                <label class="form-label">📅 Start Date</label>
+                                <input type="date" id="ann-start-date" required class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">📅 End Date</label>
+                                <input type="date" id="ann-end-date" required class="form-input">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label class="form-label">🏷️ Type</label>
+                                <select id="ann-type" class="form-select">
+                                    <option value="info">ℹ️ Information</option>
+                                    <option value="important">⚠️ Important</option>
+                                    <option value="offer">🏷️ Offer</option>
+                                    <option value="event">🎉 Event</option>
+                                    <option value="maintenance">🔧 Maintenance</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-announcement-submit">
+                            <span class="btn-icon">📢</span> Post Announcement
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Active Announcements Section -->
+                <div class="announcement-list-section">
+                    <h3>📋 Active & Recent Announcements</h3>
+                    <div id="announcement-list" class="announcement-list">
+                        <p class="loading-text">Loading announcements...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- External Scripts -->
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+        <!-- App Scripts -->
+        <script src="api.js"></script>
+        <script src="app.js"></script>
 </body>
 
 </html>
