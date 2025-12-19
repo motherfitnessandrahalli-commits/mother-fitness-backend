@@ -4,7 +4,7 @@
 
 // Customer Data Model
 class Customer {
-    constructor(id, name, age, email, phone, plan, validity, notes = '', photo = '', createdAt = new Date(), memberId = '', balance = 0) {
+    constructor(id, name, age, email, phone, plan, validity, notes = '', photo = '', createdAt = new Date(), memberId = '') {
         this.id = id;
         this.name = name;
         this.age = age;
@@ -16,7 +16,6 @@ class Customer {
         this.photo = photo;
         this.createdAt = createdAt;
         this.memberId = memberId;
-        this.balance = balance;
     }
 
     getStatus() {
@@ -68,9 +67,9 @@ class GymApp {
         this.api = new API(); // Initialize api
         this.isAuthenticated = false;
 
-        // Audio System
-        this.audioContext = null;
-        this.audioInitialized = false;
+        // Biometric & Access Control
+        this.doorController = new DoorController();
+        this.biometricSystem = new BiometricSystem(this, this.doorController);
 
         this.init();
     }
@@ -102,6 +101,7 @@ class GymApp {
             this.checkExpiringPlans();
             this.render();
             this.setupAnalyticsListener(); // Fix analytics button
+            this.setupAccessListener();
         } catch (error) {
             console.error('Failed to initialize app:', error);
             this.showNotification('error', 'Error', `Failed to load application: ${error.message}`);
@@ -194,12 +194,12 @@ class GymApp {
         }
     }
 
-    animateValue(obj, start, end, duration, prefix = '') {
+    animateValue(obj, start, end, duration) {
         let startTimestamp = null;
         const step = (timestamp) => {
             if (!startTimestamp) startTimestamp = timestamp;
             const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            obj.innerHTML = prefix + Math.floor(progress * (end - start) + start);
+            obj.innerHTML = Math.floor(progress * (end - start) + start);
             if (progress < 1) {
                 window.requestAnimationFrame(step);
             }
@@ -343,6 +343,60 @@ class GymApp {
     // migrateData and addSampleData are removed as we are using API now
 
 
+    // Access Control Methods
+    async connectDoor() {
+        const success = await this.doorController.connect();
+        if (success) {
+            this.showNotification('success', 'Hardware Connected', 'Door Controller is now active.');
+            const btn = document.getElementById('connect-door-btn');
+            if (btn) {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-success');
+                btn.innerHTML = '<span class="btn-icon">✅</span> Connected';
+            }
+        }
+    }
+
+    toggleAccessView() {
+        const dashboard = document.getElementById('access-dashboard');
+        if (dashboard.style.display === 'none') {
+            // Hide main dashboard elements
+            document.querySelector('.dashboard-stats').style.display = 'none';
+            document.querySelector('.controls-section').style.display = 'none';
+            document.querySelector('.customer-list-section').style.display = 'none';
+
+            dashboard.style.display = 'block';
+            this.biometricSystem.start();
+        } else {
+            // Show main dashboard elements
+            dashboard.style.display = 'none';
+            document.querySelector('.dashboard-stats').style.display = 'grid';
+            document.querySelector('.controls-section').style.display = 'flex';
+            document.querySelector('.customer-list-section').style.display = 'block';
+
+            this.biometricSystem.stop();
+        }
+        this.closeHamburgerMenu();
+    }
+
+    setupAccessListener() {
+        // Explicitly handle access control button to prevent double-click issues
+        setTimeout(() => {
+            const btn = document.getElementById('menu-access-btn');
+            if (btn) {
+                // Remove existing listeners by cloning
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+
+                newBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.toggleAccessView();
+                });
+            }
+        }, 1500); // Wait for DOM
+    }
+
     async loadCustomers() {
         try {
             // Show skeleton loading
@@ -373,8 +427,7 @@ class GymApp {
                 c.notes,
                 c.photo || '',
                 new Date(c.createdAt),
-                c.memberId,
-                c.balance || 0 // Add balance
+                c.memberId
             ));
 
             this.render();
@@ -403,14 +456,12 @@ class GymApp {
             email: customerData.email,
             phone: customerData.phone,
             plan: customerData.plan,
-            balance: customerData.balance,
             validity: customerData.validity,
             notes: customerData.notes,
             photo: this.currentPhoto,
             // memberId: generated by backend
             password: password,
-            isFirstLogin: true,
-            initialPayment: customerData.initialPayment // Include payment if present
+            isFirstLogin: true
         };
 
         try {
@@ -429,19 +480,11 @@ class GymApp {
                 c.notes,
                 c.photo || '',
                 new Date(c.createdAt),
-                c.memberId,
-                c.balance || 0
+                c.memberId
             );
 
             this.customers.push(newCustomer);
             this.currentPhoto = '';
-
-            // Add payment to history if present
-            if (response.data.payment) {
-                this.payments.unshift(response.data.payment);
-                // Also show a toast related to payment
-                this.showNotification('success', 'Payment Recorded', `₹${response.data.payment.amount} payment recorded.`);
-            }
 
             // Show credentials to admin with customer name for clarity
             const msg = `
@@ -1037,12 +1080,6 @@ class GymApp {
                 // Auto-select plan based on customer's plan
                 const planSelect = document.getElementById('payment-plan');
                 if (customer.plan) planSelect.value = customer.plan;
-
-                // Set current balance placeholder or value
-                const balanceInput = document.getElementById('payment-balance');
-                if (customer.balance !== undefined) {
-                    balanceInput.placeholder = `Current Balance: ${customer.balance}`;
-                }
             }
         }
 
@@ -1080,8 +1117,7 @@ class GymApp {
             planType: document.getElementById('payment-plan').value,
             receiptNumber: document.getElementById('payment-receipt').value,
             notes: document.getElementById('payment-notes').value,
-            status: 'completed',
-            balance: document.getElementById('payment-balance').value // Send new balance if provided
+            status: 'completed'
         };
 
         try {
@@ -1116,9 +1152,7 @@ class GymApp {
                         updatedCustomer.validity.split('T')[0],
                         updatedCustomer.notes,
                         updatedCustomer.photo || this.customers[index].photo,
-                        new Date(updatedCustomer.createdAt),
-                        updatedCustomer.memberId,
-                        updatedCustomer.balance // Update balance locally
+                        new Date(updatedCustomer.createdAt)
                     );
 
                     console.log('New plan:', this.customers[index].plan, 'validity:', this.customers[index].validity);
@@ -1646,9 +1680,6 @@ class GymApp {
                     this.currentPhoto = customer.photo;
                     this.displayPhoto(customer.photo);
                 }
-
-                // Hide payment section for edit
-                document.getElementById('initial-payment-section').style.display = 'none';
             }
         } else {
             // Add mode
@@ -1659,14 +1690,6 @@ class GymApp {
             const defaultDate = new Date();
             defaultDate.setMonth(defaultDate.getMonth() + 1);
             document.getElementById('customer-validity').value = defaultDate.toISOString().split('T')[0];
-
-            // Show payment section for new customers
-            document.getElementById('initial-payment-section').style.display = 'block';
-            document.getElementById('initial-payment-amount').value = '';
-            document.getElementById('initial-payment-amount').value = '';
-            document.getElementById('initial-payment-method').value = 'Cash';
-            document.getElementById('initial-balance').value = '';
-            document.getElementById('initial-payment-receipt').value = '';
         }
 
         modal.classList.add('show');
@@ -1702,22 +1725,6 @@ class GymApp {
             validity: document.getElementById('customer-validity').value,
             notes: document.getElementById('customer-notes').value.trim()
         };
-
-        // Handle Balance (Only for new customers)
-        if (!this.editingCustomerId) {
-            const balanceInput = document.getElementById('initial-balance').value;
-            customerData.balance = balanceInput ? parseFloat(balanceInput) : 0;
-        }
-
-        // Initial Payment Data (Only for new customers)
-        const paymentAmount = document.getElementById('initial-payment-amount').value;
-        if (paymentAmount && !this.editingCustomerId) {
-            customerData.initialPayment = {
-                amount: paymentAmount,
-                paymentMethod: document.getElementById('initial-payment-method').value,
-                receiptNumber: document.getElementById('initial-payment-receipt').value
-            };
-        }
 
         if (this.editingCustomerId) {
             this.updateCustomer(this.editingCustomerId, customerData);
@@ -1933,7 +1940,7 @@ class GymApp {
                 emptyState.style.display = 'flex';
                 // Update message if filtered
                 if (!dateFilter) {
-                    emptyState.querySelector('h2').textContent = "No Check-ins Today";
+                    emptyState.querySelector('h3').textContent = "No Check-ins Today";
                     emptyState.querySelector('p').textContent = "Attendance records will appear here as members check in.";
                 }
                 return;
@@ -2016,22 +2023,15 @@ class GymApp {
 
         try {
             // Fetch data from API
-            // Fetch data from API
-            const [planData, demoData, growthData, revenueData] = await Promise.all([
+            const [planData, demoData, growthData] = await Promise.all([
                 this.api.getPlanPopularity(),
                 this.api.getAgeDemographics(),
-                this.api.getBusinessGrowth(),
-                this.api.getPaymentStats()
+                this.api.getBusinessGrowth()
             ]);
 
             const plans = planData.data;
             const ages = demoData.data;
             const growth = growthData.data;
-            const revenue = revenueData.data;
-
-            // Update Revenue Cards
-            this.animateValue(document.getElementById('analytics-monthly-revenue'), 0, revenue.monthlyRevenue, 1000, '₹ ');
-            this.animateValue(document.getElementById('analytics-total-revenue'), 0, revenue.totalRevenue, 1000, '₹ ');
 
             // Destroy existing charts if they exist
             if (this.charts.plan) this.charts.plan.destroy();
@@ -2247,12 +2247,6 @@ class GymApp {
                         <span class="detail-icon">📅</span>
                         <span>Valid until ${validityDate}</span>
                     </div>
-                    ${(customer.balance && customer.balance > 0) ? `
-                    <div class="customer-detail">
-                        <span class="detail-icon">⚖️</span>
-                        <span style="color: #FFC107; font-weight: bold;">Balance: ₹${customer.balance}</span>
-                    </div>
-                    ` : ''}
                     ${customer.notes ? `
                     <div class="customer-detail">
                         <span class="detail-icon">📝</span>
@@ -2432,9 +2426,7 @@ class GymApp {
                             c.validity.split('T')[0],
                             c.notes,
                             c.photo || '',
-                            new Date(c.createdAt),
-                            c.memberId,
-                            c.balance || 0
+                            new Date(c.createdAt)
                         );
                         // Add to local cache
                         this.customers.push(customer);
@@ -3051,3 +3043,197 @@ let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new GymApp();
 });
+
+// ===================================
+// Access Control & Hardware Integration
+// ===================================
+
+class DoorController {
+    constructor() {
+        this.port = null;
+        this.writer = null;
+        this.isConnected = false;
+    }
+
+    async connect() {
+        if (!navigator.serial) {
+            alert('Web Serial API is not supported in this browser. Please use Chrome or Edge.');
+            return false;
+        }
+
+        try {
+            this.port = await navigator.serial.requestPort();
+            await this.port.open({ baudRate: 9600 });
+
+            const textEncoder = new TextEncoderStream();
+            const writableStreamClosed = textEncoder.readable.pipeTo(this.port.writable);
+            this.writer = textEncoder.writable.getWriter();
+
+            this.isConnected = true;
+            return true;
+        } catch (error) {
+            console.error('Failed to connect to door controller:', error);
+            if (error.name !== 'NotFoundError') {
+                alert(`Connection failed: ${error.message}`);
+            }
+            return false;
+        }
+    }
+
+    async openDoor() {
+        if (!this.isConnected || !this.writer) {
+            console.warn('Door controller not connected via Serial API. Simulating open...');
+            return;
+        }
+
+        try {
+            await this.writer.write("O");
+            console.log('Door open signal sent');
+        } catch (error) {
+            console.error('Failed to send door signal:', error);
+        }
+    }
+}
+
+class BiometricSystem {
+    constructor(app, doorController) {
+        this.app = app;
+        this.door = doorController;
+        this.isListening = false;
+        this.inputBuffer = '';
+        this.ui = {
+            card: document.getElementById('access-card'),
+            icon: document.getElementById('access-icon'),
+            title: document.getElementById('access-title'),
+            details: document.getElementById('access-member-info'),
+            name: document.getElementById('access-member-name'),
+            photo: document.getElementById('access-member-photo'),
+            status: document.getElementById('access-plan-status'),
+            expiry: document.getElementById('access-expiry'),
+            input: document.getElementById('biometric-input')
+        };
+
+        this.setupListener();
+    }
+
+    setupListener() {
+        if (this.ui.input) {
+            this.ui.input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    this.processInput(this.ui.input.value);
+                    this.ui.input.value = '';
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (this.isListening && document.getElementById('access-dashboard').style.display !== 'none') {
+                    this.ui.input.focus();
+                }
+            });
+        }
+    }
+
+    start() {
+        this.isListening = true;
+        this.resetUI();
+        if (this.ui.input) setTimeout(() => this.ui.input.focus(), 100);
+    }
+
+    stop() {
+        this.isListening = false;
+    }
+
+    async processInput(memberId) {
+        if (!memberId) return;
+        console.log('Processing Biometric ID:', memberId);
+        this.setUIState('processing');
+
+        try {
+            let customer = this.app.customers.find(c => c.memberId === memberId || c.id === memberId || c.phone === memberId);
+
+            if (!customer) {
+                this.denyAccess('Member not found');
+                return;
+            }
+
+            const status = customer.getStatus();
+            if (status === 'active' || status === 'expiring') {
+                await this.grantAccess(customer);
+            } else {
+                this.denyAccess('Plan Expired - Renew Your Card', customer);
+            }
+        } catch (error) {
+            console.error('Access verification logic error:', error);
+            this.denyAccess('System Error');
+        }
+    }
+
+    async grantAccess(customer) {
+        this.setUIState('granted', customer);
+        await this.door.openDoor();
+        try {
+            await this.app.api.markAttendance(customer.id);
+            this.app.updateAttendanceStats();
+            this.app.showNotification('success', 'Access Granted', `Welcome, ${customer.name}!`);
+        } catch (error) {
+            console.error('Attendance log failed:', error);
+        }
+        setTimeout(() => this.resetUI(), 4000);
+    }
+
+    denyAccess(reason, customer = null) {
+        this.setUIState('denied', customer, reason);
+        setTimeout(() => this.resetUI(), 4000);
+    }
+
+    setUIState(state, customer = null, message = '') {
+        const { card, icon, title, details, name, photo, status, expiry } = this.ui;
+        card.classList.remove('waiting', 'granted', 'denied');
+
+        if (state === 'waiting') {
+            card.classList.add('waiting');
+            icon.textContent = '🔒';
+            title.textContent = 'Waiting for Access...';
+            details.style.display = 'none';
+        } else if (state === 'granted') {
+            card.classList.add('granted');
+            icon.textContent = '🔓';
+            title.textContent = 'Access Granted';
+            if (customer) {
+                details.style.display = 'block';
+                name.textContent = customer.name;
+                photo.src = customer.photo || 'assets/default-user.png';
+                if (!customer.photo) photo.style.display = 'none'; else photo.style.display = 'block';
+                status.textContent = 'Active Member';
+                status.className = 'status-badge active';
+                expiry.textContent = `Valid until: ${new Date(customer.validity).toLocaleDateString()}`;
+            }
+        } else if (state === 'denied') {
+            card.classList.add('denied');
+            icon.textContent = '🚫';
+            title.textContent = 'Access Denied';
+            details.style.display = 'block';
+            if (customer) {
+                name.textContent = customer.name;
+                photo.src = customer.photo || '';
+                status.textContent = 'Membership Expired';
+                status.className = 'status-badge expired';
+                expiry.textContent = message || 'Please renew your subscription';
+            } else {
+                name.textContent = 'Unknown Member';
+                photo.style.display = 'none';
+                status.textContent = 'Invalid ID';
+                status.className = 'status-badge expired';
+                expiry.textContent = message;
+            }
+        }
+    }
+
+    resetUI() {
+        this.setUIState('waiting');
+        if (this.ui.input) {
+            this.ui.input.value = '';
+            this.ui.input.focus();
+        }
+    }
+}
