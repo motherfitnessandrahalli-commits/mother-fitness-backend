@@ -43,7 +43,7 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
             $lookup: {
                 from: 'attendances',
                 localField: '_id',
-                foreignField: customerId,
+                foreignField: 'customerId',
                 as: 'visits'
             }
         },
