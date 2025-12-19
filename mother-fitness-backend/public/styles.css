@@ -3785,6 +3785,27 @@ body.light-mode #payment-view {
     letter-spacing: 1px;
 }
 
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 10px 0;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-meta {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
 /* mini lists */
 .mini-list {
     margin-top: var(--spacing-md);
