@@ -585,44 +585,7 @@
         </div>
     </div>
 
-    <!-- Access Control Dashboard (Hidden by default) -->
-    <section id="access-dashboard" class="access-dashboard" style="display: none;">
-        <div class="access-header">
-            <h2>🔐 Biometric Access Control</h2>
-            <div class="access-controls">
-                <select id="access-port-select" class="form-control"
-                    style="width: auto; display: inline-block; margin-right: 10px;">
-                    <option value="">Select Port</option>
-                </select>
-                <button id="connect-door-btn" class="btn btn-secondary">
-                    <span class="btn-icon">🔌</span>
-                    Connect Door
-                </button>
-                <button class="btn btn-outline" onclick="app.toggleAccessView()">Back to Dashboard</button>
-            </div>
-        </div>
 
-        <div class="access-status-container">
-            <!-- Access Status Card -->
-            <div id="access-card" class="access-card waiting">
-                <div class="access-icon-wrapper">
-                    <div id="access-icon" class="access-icon">🔒</div>
-                </div>
-                <h2 id="access-title">Waiting for Access...</h2>
-                <div id="access-details" class="access-details">
-                    <p class="access-instruction">Please place your finger on the scanner</p>
-                    <div id="access-member-info" style="display: none;">
-                        <img id="access-member-photo" src="" alt="Member" class="access-member-photo">
-                        <h3 id="access-member-name">Member Name</h3>
-                        <p id="access-plan-status" class="status-badge">Active</p>
-                        <p id="access-expiry">Plan expires on: 2025-01-01</p>
-                    </div>
-                </div>
-                <!-- Hidden Input for Keyboard Wedge -->
-                <input type="text" id="biometric-input" class="biometric-input" autocomplete="off" autofocus>
-            </div>
-        </div>
-    </section>
 
     <!-- Attendance Success Modal -->
     <div id="attendance-success-modal" class="modal">
@@ -657,10 +620,7 @@
 
                 <div class="menu-divider"></div>
 
-                <div class="menu-item" id="menu-access-btn">
-                    <span class="menu-icon">🔐</span>
-                    <span class="menu-text">Access Control</span>
-                </div>
+
 
                 <div class="menu-item" id="menu-attendance-btn">
                     <span class="menu-icon">📋</span>
