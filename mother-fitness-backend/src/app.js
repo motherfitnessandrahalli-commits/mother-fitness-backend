@@ -96,7 +96,7 @@ app.use('/api/notifications', require('./routes/notification.routes'));
 app.use('/api/member', require('./routes/member.routes'));
 app.use('/api/payments', require('./routes/payment.routes'));
 app.use('/api/announcements', require('./routes/announcement.routes'));
-app.use('/api/access', require('./routes/access.routes'));
+app.use('/api/zkteco', require('./routes/zkteco.routes'));
 app.use('/api/intelligence', require('./routes/intelligence.routes'));
 
 // Serve Member Portal at /member-app (PWA) - AFTER API routes
