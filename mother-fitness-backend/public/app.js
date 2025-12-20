@@ -263,20 +263,32 @@ class GymApp {
         timelineList.innerHTML = '<p class="loading-text">Loading journey...</p>';
 
         try {
-            const data = await this.api.getMemberTimeline(customerId);
-            const events = data.timeline;
+            const response = await this.api.getMemberTimeline(customerId);
 
-            if (events.length === 0) {
+            // Handle different possible response structures
+            let events = null;
+            if (response && response.data && response.data.timeline) {
+                events = response.data.timeline;
+            } else if (response && response.timeline) {
+                events = response.timeline;
+            } else if (response && Array.isArray(response.data)) {
+                events = response.data;
+            } else if (response && Array.isArray(response)) {
+                events = response;
+            }
+
+            // Check if events is valid and has items
+            if (!events || !Array.isArray(events) || events.length === 0) {
                 timelineList.innerHTML = '<p class="empty-text">No history recorded yet.</p>';
                 return;
             }
 
             timelineList.innerHTML = events.map(event => `
-                <div class="timeline-item ${event.type.toLowerCase()}">
+                <div class="timeline-item ${event.type ? event.type.toLowerCase() : 'default'}">
                     <div class="timeline-marker"></div>
                     <div class="timeline-content">
-                        <div class="time">${new Date(event.timestamp).toLocaleString()}</div>
-                        <div class="title">${event.title}</div>
+                        <div class="time">${event.timestamp ? new Date(event.timestamp).toLocaleString() : 'Unknown time'}</div>
+                        <div class="title">${event.title || 'Event'}</div>
                         <div class="details">${event.details || ''}</div>
                     </div>
                 </div>
