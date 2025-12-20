@@ -31,7 +31,7 @@ const customerSchemas = {
         notes: Joi.string().allow('').max(500),
         photo: Joi.string().allow('').optional(), // Allow any string (URL or base64)
         // Member authentication fields (optional)
-        memberId: Joi.string().trim().min(3).max(20).optional(),
+        memberId: Joi.string().trim().min(3).max(20).allow('').optional(),
         password: Joi.string().min(4).max(100).optional(),
         isFirstLogin: Joi.boolean().optional(),
         initialPayment: Joi.object({
@@ -52,7 +52,7 @@ const customerSchemas = {
         notes: Joi.string().allow('').max(500),
         photo: Joi.string().allow('').optional(), // Allow any string (URL or base64)
         // Member authentication fields (optional)
-        memberId: Joi.string().trim().min(3).max(20).optional(),
+        memberId: Joi.string().trim().min(3).max(20).allow('').optional(),
         password: Joi.string().min(4).max(100).optional(),
         isFirstLogin: Joi.boolean().optional(),
     }).min(1), // At least one field must be provided
