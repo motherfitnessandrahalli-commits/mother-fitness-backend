@@ -96,6 +96,10 @@
                         <span class="btn-icon">🏆</span>
                         Sync Badges
                     </button>
+                    <button id="device-settings-btn" class="btn btn-secondary" onclick="app.toggleDeviceSettings()">
+                        <span class="btn-icon">⚙️</span>
+                        Device Settings
+                    </button>
                     <select id="filter-status" class="filter-select">
                         <option value="all">All Customers</option>
                         <option value="active">Active Plans</option>
@@ -245,6 +249,117 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Device Settings Dashboard (Hidden by default) -->
+            <section id="device-settings-dashboard" class="device-settings-dashboard" style="display: none;">
+                <div class="intelligence-header">
+                    <h2>⚙️ Device Settings & Management</h2>
+                    <button class="btn btn-outline" onclick="app.toggleDeviceSettings()">Back to Dashboard</button>
+                </div>
+
+                <!-- Connection Status Banner -->
+                <div id="connection-status-banner" class="connection-status disconnected">
+                    <span class="status-indicator">●</span>
+                    <span id="status-text">Not Connected</span>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- Device Configuration Card -->
+                    <div class="settings-card">
+                        <h3>🔧 Device Configuration</h3>
+                        <div class="form-group">
+                            <label for="device-ip">Device IP Address</label>
+                            <input type="text" id="device-ip" class="form-input" placeholder="192.168.1.201" value="">
+                        </div>
+                        <div class="form-group">
+                            <label for="device-port">Port</label>
+                            <input type="number" id="device-port" class="form-input" placeholder="4370" value="4370">
+                        </div>
+                        <div class="device-actions">
+                            <button id="connect-device-btn" class="btn btn-primary" onclick="app.connectDevice()">
+                                <span class="btn-icon">🔌</span>
+                                Connect to Device
+                            </button>
+                            <button id="disconnect-device-btn" class="btn btn-danger" onclick="app.disconnectDevice()"
+                                style="display: none;">
+                                <span class="btn-icon">🔌</span>
+                                Disconnect
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Device Information Card -->
+                    <div class="settings-card">
+                        <h3>ℹ️ Device Information</h3>
+                        <div id="device-info-content">
+                            <div class="info-row">
+                                <span class="info-label">Status:</span>
+                                <span id="info-status" class="info-value">Not Connected</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">IP Address:</span>
+                                <span id="info-ip" class="info-value">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Port:</span>
+                                <span id="info-port" class="info-value">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Enrolled Users:</span>
+                                <span id="info-users" class="info-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Member Enrollment Card -->
+                    <div class="settings-card full-width">
+                        <h3>👥 Member Enrollment</h3>
+                        <p class="card-description">Sync all active members to the biometric device</p>
+                        <div class="enrollment-actions">
+                            <button id="sync-all-members-btn" class="btn btn-success" onclick="app.syncAllMembers()"
+                                disabled>
+                                <span class="btn-icon">🔄</span>
+                                Sync All Active Members
+                            </button>
+                            <button id="refresh-enrolled-btn" class="btn btn-secondary"
+                                onclick="app.refreshEnrolledUsers()" disabled>
+                                <span class="btn-icon">📊</span>
+                                Refresh Enrollment Status
+                            </button>
+                        </div>
+                        <div id="enrollment-status" class="enrollment-status" style="display: none;">
+                            <div class="status-progress">
+                                <div id="enrollment-progress" class="progress-bar"></div>
+                            </div>
+                            <p id="enrollment-message" class="status-message"></p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats Card -->
+                    <div class="settings-card">
+                        <h3>📊 Quick Stats</h3>
+                        <div class="quick-stats">
+                            <div class="quick-stat-item">
+                                <div class="stat-value" id="total-members-stat">0</div>
+                                <div class="stat-label">Total Active Members</div>
+                            </div>
+                            <div class="quick-stat-item">
+                                <div class="stat-value" id="enrolled-members-stat">0</div>
+                                <div class="stat-label">Enrolled in Device</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Device Logs Card -->
+                    <div class="settings-card">
+                        <h3>📝 Recent Activity</h3>
+                        <div id="device-activity-log" class="activity-log">
+                            <p class="empty-text">No activity yet. Connect device to see logs.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Access Dashboard will be moved to root or managed via view switching -->
         </div>
     </main>

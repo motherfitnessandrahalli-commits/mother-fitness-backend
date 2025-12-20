@@ -67,9 +67,9 @@ class GymApp {
         this.api = new API(); // Initialize api
         this.isAuthenticated = false;
 
-        // Biometric & Access Control
+        // Socket.IO for real-time events
         this.socket = null;
-        this.biometricSystem = new BiometricSystem(this);
+        this.deviceConnected = false;
 
         this.init();
     }
