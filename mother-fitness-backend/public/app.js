@@ -190,45 +190,70 @@ class GymApp {
 
     async loadIntelligenceData() {
         try {
-            const data = await this.api.getBusinessHealth();
-            const { health, risks } = data;
+            const response = await this.api.getBusinessHealth();
+
+            // Handle different possible response structures
+            let health = null;
+            let risks = null;
+
+            if (response && response.data) {
+                health = response.data.health;
+                risks = response.data.risks;
+            } else if (response) {
+                health = response.health;
+                risks = response.risks;
+            }
 
             // Update Health Score
             const circle = document.getElementById('health-score-circle');
             const valText = document.getElementById('health-score-val');
             const statusText = document.getElementById('health-status');
 
-            if (circle && valText && statusText) {
+            if (circle && valText && statusText && health && typeof health.score !== 'undefined') {
                 const score = health.score;
                 circle.style.strokeDasharray = `${score}, 100`;
                 valText.textContent = `${score}%`;
-                statusText.textContent = health.status;
+                statusText.textContent = health.status || 'Unknown';
 
                 // Color coding
                 if (score < 40) statusText.style.color = 'var(--danger-color)';
                 else if (score < 60) statusText.style.color = 'var(--warning-color)';
                 else statusText.style.color = 'var(--success-color)';
+            } else if (statusText) {
+                statusText.textContent = 'No data available';
+                statusText.style.color = 'var(--text-secondary)';
             }
 
             // Update Churn Risk
             const churnCount = document.getElementById('churn-count');
             const churnList = document.getElementById('churn-list');
 
-            if (churnCount) churnCount.textContent = risks.churnCount;
-            if (churnList) {
+            if (churnCount && risks && typeof risks.churnCount !== 'undefined') {
+                churnCount.textContent = risks.churnCount;
+            } else if (churnCount) {
+                churnCount.textContent = '0';
+            }
+
+            if (churnList && risks && risks.churnMembers && Array.isArray(risks.churnMembers)) {
                 churnList.innerHTML = risks.churnMembers.length > 0
                     ? risks.churnMembers.map(m => `
                         <div class="mini-item">
-                            <span class="name">${m.name}</span>
+                            <span class="name">${m.name || 'Unknown'}</span>
                             <span class="meta">Last visit: ${m.lastVisit ? new Date(m.lastVisit).toLocaleDateString() : 'Never'}</span>
                         </div>
                     `).join('')
                     : '<p class="empty-text">No high risk members detected.</p>';
+            } else if (churnList) {
+                churnList.innerHTML = '<p class="empty-text">No data available.</p>';
             }
 
             // Update Leakage
             const leakageCount = document.getElementById('leakage-count');
-            if (leakageCount) leakageCount.textContent = risks.leakageCount;
+            if (leakageCount && risks && typeof risks.leakageCount !== 'undefined') {
+                leakageCount.textContent = risks.leakageCount;
+            } else if (leakageCount) {
+                leakageCount.textContent = '0';
+            }
 
         } catch (error) {
             console.error('Failed to load intelligence data:', error);
