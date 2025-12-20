@@ -166,7 +166,7 @@ class GymApp {
         const customerList = document.querySelector('.customer-list-section');
         const analytics = document.getElementById('analytics-dashboard');
         const attendance = document.getElementById('attendance-dashboard');
-        const accessDashboard = document.getElementById('access-dashboard');
+        const deviceSettings = document.getElementById('device-settings-dashboard');
 
         if (dashboard.style.display === 'none') {
             // Hide everything else
@@ -175,7 +175,7 @@ class GymApp {
             customerList.style.display = 'none';
             if (analytics) analytics.style.display = 'none';
             if (attendance) attendance.style.display = 'none';
-            if (accessDashboard) accessDashboard.style.display = 'none';
+            if (deviceSettings) deviceSettings.style.display = 'none';
 
             dashboard.style.display = 'block';
             this.loadIntelligenceData();
@@ -2324,8 +2324,8 @@ class GymApp {
         const controlsSection = document.querySelector('.controls-section');
         const dashboardSection = document.getElementById('analytics-dashboard');
         const attendanceSection = document.getElementById('attendance-dashboard');
-        const accessDashboard = document.getElementById('access-dashboard');
         const intelligenceDashboard = document.getElementById('intelligence-dashboard');
+        const deviceSettingsDashboard = document.getElementById('device-settings-dashboard');
 
         // Determine target view
         let nextView;
@@ -2342,8 +2342,8 @@ class GymApp {
             if (listSection) listSection.style.display = 'none';
             if (controlsSection) controlsSection.style.display = 'none';
             if (attendanceSection) attendanceSection.style.display = 'none';
-            if (accessDashboard) accessDashboard.style.display = 'none';
             if (intelligenceDashboard) intelligenceDashboard.style.display = 'none';
+            if (deviceSettingsDashboard) deviceSettingsDashboard.style.display = 'none';
 
             if (dashboardSection) {
                 dashboardSection.style.display = 'grid'; // Ensure grid layout
@@ -2357,8 +2357,8 @@ class GymApp {
             if (controlsSection) controlsSection.style.display = 'none';
             if (dashboardSection) dashboardSection.style.display = 'none';
             if (attendanceSection) attendanceSection.style.display = 'block';
-            if (accessDashboard) accessDashboard.style.display = 'none';
             if (intelligenceDashboard) intelligenceDashboard.style.display = 'none';
+            if (deviceSettingsDashboard) deviceSettingsDashboard.style.display = 'none';
         } else {
             // Default to List View
             this.currentView = 'list';
@@ -2366,8 +2366,8 @@ class GymApp {
             if (controlsSection) controlsSection.style.display = 'flex';
             if (dashboardSection) dashboardSection.style.display = 'none';
             if (attendanceSection) attendanceSection.style.display = 'none';
-            if (accessDashboard) accessDashboard.style.display = 'none';
             if (intelligenceDashboard) intelligenceDashboard.style.display = 'none';
+            if (deviceSettingsDashboard) deviceSettingsDashboard.style.display = 'none';
         }
 
         // Update menu labels after state is set
@@ -2379,8 +2379,8 @@ class GymApp {
         const controlsSection = document.querySelector('.controls-section');
         const analyticsSection = document.getElementById('analytics-dashboard');
         const attendanceSection = document.getElementById('attendance-dashboard');
-        const accessDashboard = document.getElementById('access-dashboard');
         const intelligenceDashboard = document.getElementById('intelligence-dashboard');
+        const deviceSettingsDashboard = document.getElementById('device-settings-dashboard');
 
         if (this.currentView === 'attendance') {
             // Switch back to List
@@ -2394,8 +2394,8 @@ class GymApp {
                 listSection.style.display = 'block';
                 controlsSection.style.display = 'flex';
                 analyticsSection.style.display = 'none';
-                if (accessDashboard) accessDashboard.style.display = 'none';
                 if (intelligenceDashboard) intelligenceDashboard.style.display = 'none';
+                if (deviceSettingsDashboard) deviceSettingsDashboard.style.display = 'none';
 
                 listSection.style.animation = 'fadeIn 0.4s ease-out forwards';
                 controlsSection.style.animation = 'fadeIn 0.4s ease-out forwards';
@@ -2411,8 +2411,8 @@ class GymApp {
             listSection.style.animation = 'fadeOut 0.3s ease-out forwards';
             controlsSection.style.animation = 'fadeOut 0.3s ease-out forwards';
             analyticsSection.style.display = 'none'; // Ensure analytics is hidden
-            if (accessDashboard) accessDashboard.style.display = 'none';
             if (intelligenceDashboard) intelligenceDashboard.style.display = 'none';
+            if (deviceSettingsDashboard) deviceSettingsDashboard.style.display = 'none';
 
             setTimeout(() => {
                 listSection.style.display = 'none';
