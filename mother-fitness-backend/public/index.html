@@ -79,6 +79,19 @@
                         <p>Expired Plans</p>
                     </div>
                 </div>
+                <!-- Live Gym Count Widget -->
+                <div class="stat-card live-count-card"
+                    style="background: linear-gradient(135deg, rgba(46, 213, 115, 0.2), rgba(84, 160, 255, 0.2)); border: 1px solid rgba(46, 213, 115, 0.3);">
+                    <div class="stat-icon live" style="background: rgba(46, 213, 115, 0.2); color: #2ed573;">🔥</div>
+                    <div class="stat-info">
+                        <h3 id="live-gym-count">0</h3>
+                        <p>Inside Gym Now</p>
+                    </div>
+                    <div class="live-indicator">
+                        <span class="pulse"></span>
+                        LIVE
+                    </div>
+                </div>
             </section>
 
             <!-- Search and Filter Section -->
@@ -275,39 +288,45 @@
                             <label for="device-port">Port</label>
                             <input type="number" id="device-port" class="form-input" placeholder="4370" value="4370">
                         </div>
+                        <div class="form-group">
+                            <label for="device-role">Device Role (IN/OUT)</label>
+                            <select id="device-role" class="form-input">
+                                <option value="IN">ENTRY (IN) - Face/Thumb/Card</option>
+                                <option value="OUT">EXIT (OUT) - Door Open Always</option>
+                            </select>
+                            <small style="color: var(--text-muted); display: block; margin-top: 5px;">
+                                Use <b>ENTRY</b> for strict access rules & total count. <br>
+                                Use <b>EXIT</b> for marking members as OUT.
+                            </small>
+                        </div>
                         <div class="device-actions">
                             <button id="connect-device-btn" class="btn btn-primary" onclick="app.connectDevice()">
                                 <span class="btn-icon">🔌</span>
-                                Connect to Device
-                            </button>
-                            <button id="disconnect-device-btn" class="btn btn-danger" onclick="app.disconnectDevice()"
-                                style="display: none;">
-                                <span class="btn-icon">🔌</span>
-                                Disconnect
+                                Add & Connect Device
                             </button>
                         </div>
                     </div>
 
-                    <!-- Device Information Card -->
+                    <!-- Connected Devices Inventory -->
+                    <div class="settings-card full-width">
+                        <h3>📱 Connected Biometric Devices</h3>
+                        <div class="device-list" id="connected-devices-list">
+                            <div class="empty-devices">
+                                <p>No devices connected. Add a device above to start.</p>
+                            </div>
+                        </div>
+                        <div class="inventory-footer" style="margin-top: 20px; text-align: right;">
+                            <button class="btn btn-outline btn-sm" onclick="app.syncZKTeco()">
+                                <span class="btn-icon">🔄</span> Sync All Devices
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Occupancy Details -->
                     <div class="settings-card">
-                        <h3>ℹ️ Device Information</h3>
-                        <div id="device-info-content">
-                            <div class="info-row">
-                                <span class="info-label">Status:</span>
-                                <span id="info-status" class="info-value">Not Connected</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">IP Address:</span>
-                                <span id="info-ip" class="info-value">-</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Port:</span>
-                                <span id="info-port" class="info-value">-</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Enrolled Users:</span>
-                                <span id="info-users" class="info-value">-</span>
-                            </div>
+                        <h3>👥 Who's Inside?</h3>
+                        <div id="inside-members-list" class="mini-visitor-list">
+                            <div class="empty-notif">Gym is currently empty</div>
                         </div>
                     </div>
 
@@ -360,7 +379,40 @@
                 </div>
             </section>
 
-            <!-- Access Dashboard will be moved to root or managed via view switching -->
+            <!-- Access Dashboard -->
+            <section id="access-dashboard" class="access-dashboard" style="display: none;">
+                <div class="access-header">
+                    <h2>🚪 Access Monitoring</h2>
+                    <div class="access-controls">
+                        <button class="btn btn-outline" onclick="app.toggleView('list')">Back to Dashboard</button>
+                    </div>
+                </div>
+
+                <div class="access-status-container">
+                    <div id="access-main-card" class="access-card waiting">
+                        <div class="access-icon-wrapper">
+                            <div class="access-icon">🚪</div>
+                        </div>
+                        <div class="access-title">READY TO SCAN</div>
+                        <p class="access-instruction">Please use the biometric device or scan your card</p>
+                    </div>
+
+                    <!-- Debug Diagnostics -->
+                    <div class="debug-panel"
+                        style="margin-top: 2rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1); width: 100%; max-width: 500px; margin-left: auto; margin-right: auto;">
+                        <div id="scan-status"
+                            style="margin-bottom: 1rem; padding: 0.5rem; border-radius: 6px; text-align: center; background: #334155; color: white;">
+                            Waiting for scan... (Diagnosis)</div>
+                        <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                            <button onclick="app.triggerBiometricMock('U010', 'IN')"
+                                class="btn btn-sm btn-primary">Trigger Mock (U010 IN)</button>
+                            <button onclick="app.testManualUI()" class="btn btn-sm btn-secondary">Test UI Logic</button>
+                            <button onclick="app.testSocketLink()" class="btn btn-sm btn-outline">Test Socket
+                                Link</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -603,24 +655,27 @@
     </div>
 
     <!-- Hamburger Menu Backdrop -->
-    <div id="hamburger-backdrop" class="hamburger-backdrop" onclick="closeHamburgerMenu()"></div>
+    <div id="hamburger-backdrop" class="hamburger-backdrop" onclick="app.closeHamburgerMenu()"></div>
 
     <!-- Hamburger Menu -->
     <div id="hamburger-menu" class="hamburger-menu">
         <div class="hamburger-menu-content">
             <div class="hamburger-menu-header">
                 <h3>Menu</h3>
-                <button class="hamburger-close" onclick="closeHamburgerMenu()">×</button>
+                <button class="hamburger-close" onclick="app.closeHamburgerMenu()">×</button>
             </div>
             <div class="hamburger-menu-nav">
+                <div class="menu-item" id="menu-home-btn">
+                    <span class="menu-icon">🏠</span>
+                    <span class="menu-text">Home / Member List</span>
+                </div>
+
                 <div class="menu-item" id="menu-add-customer-btn">
                     <span class="menu-icon">👤</span>
                     <span class="menu-text">Add Customer</span>
                 </div>
 
                 <div class="menu-divider"></div>
-
-
 
                 <div class="menu-item" id="menu-attendance-btn">
                     <span class="menu-icon">📋</span>
@@ -640,6 +695,11 @@
                 <div class="menu-item" id="menu-device-settings-btn">
                     <span class="menu-icon">⚙️</span>
                     <span class="menu-text">Device Settings & Management</span>
+                </div>
+
+                <div class="menu-item" id="menu-access-btn">
+                    <span class="menu-icon">🚪</span>
+                    <span class="menu-text">Access Monitoring</span>
                 </div>
 
                 <div class="menu-divider"></div>

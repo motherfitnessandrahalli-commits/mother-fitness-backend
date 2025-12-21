@@ -51,6 +51,13 @@ const API_CONFIG = {
         CONNECT_DOOR: '/api/access/connect',
         GET_PORTS: '/api/access/ports',
 
+        // ZKTeco Multi-Device & Occupancy
+        ZK_CONNECT: '/api/zkteco/connect',
+        ZK_DISCONNECT: '/api/zkteco/disconnect',
+        ZK_STATUS: '/api/zkteco/status',
+        ZK_OCCUPANCY: '/api/zkteco/occupancy',
+        ZK_SYNC: '/api/zkteco/sync',
+
         // Intelligence
         GET_TIMELINE: (customerId) => `/api/intelligence/timeline/${customerId}`,
         GET_BUSINESS_HEALTH: '/api/intelligence/business-health',
@@ -101,6 +108,11 @@ class API {
         const token = this.getToken();
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        // Handle 'data' property for Axios-like compatibility
+        if (options.data && !options.body) {
+            options.body = JSON.stringify(options.data);
         }
 
         const config = {
@@ -406,6 +418,38 @@ class API {
 
     async getAccessPorts() {
         return await this.request(API_CONFIG.ENDPOINTS.GET_PORTS);
+    }
+
+    // ===================================
+    // ZKTeco Methods (Multi-Device)
+    // ===================================
+
+    async connectZKTeco(ip, port, role) {
+        return await this.request(API_CONFIG.ENDPOINTS.ZK_CONNECT, {
+            method: 'POST',
+            body: JSON.stringify({ ip, port, role }),
+        });
+    }
+
+    async disconnectZKTeco(ip) {
+        return await this.request(API_CONFIG.ENDPOINTS.ZK_DISCONNECT, {
+            method: 'POST',
+            body: JSON.stringify({ ip }),
+        });
+    }
+
+    async getZKTecoStatus() {
+        return await this.request(API_CONFIG.ENDPOINTS.ZK_STATUS);
+    }
+
+    async getOccupancy() {
+        return await this.request(API_CONFIG.ENDPOINTS.ZK_OCCUPANCY);
+    }
+
+    async syncZKTeco() {
+        return await this.request(API_CONFIG.ENDPOINTS.ZK_SYNC, {
+            method: 'POST'
+        });
     }
 
     // ===================================

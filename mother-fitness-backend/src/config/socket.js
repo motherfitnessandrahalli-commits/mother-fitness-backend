@@ -29,6 +29,12 @@ const initSocket = (server) => {
     io.on('connection', (socket) => {
         logger.info(`Socket connected: ${socket.id}`);
 
+        // Diagnostic Ping-Pong
+        socket.on('test-ping', (data) => {
+            logger.info(`🏓 Socket Ping received: ${data}`);
+            socket.emit('test-pong', { message: 'Socket Link Active', timestamp: new Date() });
+        });
+
         socket.on('disconnect', () => {
             logger.info(`Socket disconnected: ${socket.id}`);
         });

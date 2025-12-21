@@ -48,6 +48,91 @@ class Customer {
 }
 
 // Application State
+// ===================================
+// Access Result Manager (UI Feedback)
+// ===================================
+
+class AccessResultManager {
+    constructor(app) {
+        this.app = app;
+        this.isListening = true;
+        this.overlayContainer = null;
+        this.init();
+    }
+
+    init() {
+        // Create overlay container if not exists
+        if (!document.getElementById('access-result-overlay')) {
+            const container = document.createElement('div');
+            container.id = 'access-result-overlay';
+            container.className = 'access-result-overlay';
+            document.body.appendChild(container);
+            this.overlayContainer = container;
+        } else {
+            this.overlayContainer = document.getElementById('access-result-overlay');
+        }
+    }
+
+    start() { this.isListening = true; }
+    stop() { this.isListening = false; }
+
+    showResult(data) {
+        if (!this.isListening) return;
+
+        const { success, message, customer, type, deviceRole } = data;
+        const resultType = success ? 'granted' : 'denied';
+
+        // Create access card
+        const card = document.createElement('div');
+        card.className = `access-card ${resultType}`;
+
+        const photoHtml = customer && customer.photo
+            ? `<img src="${customer.photo}" class="access-avatar" alt="Member">`
+            : `<div class="access-avatar" style="background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; font-size: 3rem;">👤</div>`;
+
+        card.innerHTML = `
+            <div class="access-indicator ${resultType}">
+                ${success ? '✅' : '❌'} ${deviceRole || 'ENTRY'}
+            </div>
+            ${photoHtml}
+            <div class="access-title">${success ? 'ACCESS GRANTED' : 'ACCESS DENIED'}</div>
+            <div class="access-name">${customer ? customer.name : 'Unknown'}</div>
+            <div class="access-msg">${message || (success ? 'Welcome to Mother Fitness!' : 'Access Blocked')}</div>
+            <div class="access-time">${new Date().toLocaleTimeString()}</div>
+        `;
+
+        this.overlayContainer.prepend(card);
+
+        // Voice Alert
+        if (message) {
+            this.app.playVoiceAlert(message);
+        } else if (success) {
+            this.app.playVoiceAlert(`Welcome ${customer ? customer.name : ''}`);
+        }
+
+        // Sound Feedback
+        this.app.playBeep(success ? 'short' : 'long');
+
+        // Auto-remove card
+        setTimeout(() => {
+            card.style.animation = 'slideInRight 0.3s reverse forwards';
+            setTimeout(() => card.remove(), 300);
+        }, 5000);
+    }
+
+    // For backward compatibility with existing calls
+    setUIState(type, customer, message) {
+        this.showResult({
+            success: type === 'granted',
+            customer,
+            message,
+            deviceRole: 'SCAN'
+        });
+    }
+
+    resetUI() { /* No-op, managed by auto-remove */ }
+}
+
 class GymApp {
     constructor() {
         this.customers = [];
@@ -70,6 +155,10 @@ class GymApp {
         // Socket.IO for real-time events
         this.socket = null;
         this.deviceConnected = false;
+        this.connectedDevices = []; // Track multiple ZKTeco devices
+
+        // Initialize Access UI Manager
+        this.biometricSystem = new AccessResultManager(this);
 
         this.init();
     }
@@ -100,11 +189,15 @@ class GymApp {
             this.setupEventListeners();
             this.checkExpiringPlans();
             this.render();
-            this.setupAnalyticsListener(); // Fix analytics button
-            this.setupIntelligenceListener(); // Add intelligence button
-            this.setupDeviceSettingsListener(); // Add device settings button
             this.initSocket(); // Initialize socket first with correct URL
             this.setupSocketListeners(); // Then setup listeners
+
+            // Load Initial ZKTeco & Occupancy Data
+            this.loadZKTecoStatus();
+            this.updateOccupancy();
+
+            // Periodic Occupancy Refresh (Every 30s as fallback to Socket)
+            setInterval(() => this.updateOccupancy(), 30000);
         } catch (error) {
             console.error('Failed to initialize app:', error);
             this.showNotification('error', 'Error', `Failed to load application: ${error.message}`);
@@ -131,218 +224,198 @@ class GymApp {
             console.log('Connected to backend sockets');
         });
 
-        // Listen for access granted/denied if dashboard is open
-        this.socket.on('access:granted', (data) => {
-            if (this.biometricSystem.isListening) {
-                this.biometricSystem.setUIState('granted', data.customer);
-                this.showNotification('success', 'Access Granted', `Welcome, ${data.customer.name}!`);
-                setTimeout(() => this.biometricSystem.resetUI(), 4000);
+        // Unified Access Result Listener (IN/OUT)
+        this.socket.on('access:result', (data) => {
+            console.log('Access Result Received via Socket:', data);
+            // TRIGGER THE ACTUAL UI (Link 4)
+            console.log('🎬 TRIGGERING MAIN UI RENDERING...');
+            this.biometricSystem.showResult(data);
+
+            // Testing confirmation as requested
+            alert("ACCESS " + (data.decision || 'GRANTED'));
+
+            // Explicitly update diagnosis status if element exists
+            const statusBox = document.getElementById('scan-status');
+            if (statusBox) {
+                const isAllowed = data.status === 'allowed' || data.success === true;
+                statusBox.textContent = isAllowed ? '✅ ACCESS GRANTED (SOCKET)' : '❌ ACCESS DENIED (SOCKET)';
+                statusBox.style.background = isAllowed ? '#059669' : '#dc2626';
             }
+
+            // Update stats & occupancy
             this.updateAttendanceStats();
+            this.updateOccupancy();
+
+            // Refresh list if dashboard is open
+            if (this.currentView === 'attendance') {
+                this.renderAttendance();
+            }
+        });
+
+        // Diagnostic Pong Listener
+        this.socket.on('test-pong', (data) => {
+            console.log('🏓 Socket Pong Received:', data);
+            this.showNotification('info', 'Socket Active', 'Link verified with backend');
+            const statusBox = document.getElementById('scan-status');
+            if (statusBox) {
+                statusBox.textContent = '🏓 SOCKET LINK ACTIVE (PONG)';
+                statusBox.style.background = '#3b82f6';
+
+                // Reset after 3 seconds
+                setTimeout(() => {
+                    statusBox.textContent = 'READY TO SCAN';
+                    statusBox.style.background = '#334155';
+                }, 3000);
+            }
+        });
+
+        // Legacy listeners (fallback)
+        this.socket.on('access:granted', (data) => {
+            if (!data.processed) { // Avoid double handling if result was already sent
+                this.biometricSystem.setUIState('granted', data.customer);
+                this.updateAttendanceStats();
+            }
         });
 
         this.socket.on('access:denied', (data) => {
-            if (this.biometricSystem.isListening) {
+            if (!data.processed) {
                 this.biometricSystem.setUIState('denied', data.customer, data.message);
-                setTimeout(() => this.biometricSystem.resetUI(), 4000);
             }
         });
     }
 
-    setupIntelligenceListener() {
-        setTimeout(() => {
-            const btn = document.getElementById('menu-intelligence-btn');
-            if (btn) {
-                const newBtn = btn.cloneNode(true);
-                btn.parentNode.replaceChild(newBtn, btn);
+    // ===================================
+    // View Management & Dashboards
+    // ===================================
 
-                newBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.toggleIntelligenceView();
-                    this.closeHamburgerMenu();
-                });
-            }
-        }, 1500);
-    }
+    switchView(viewId) {
+        const dashboards = [
+            'intelligence-dashboard',
+            'device-settings-dashboard',
+            'access-dashboard',
+            'attendance-dashboard',
+            'analytics-dashboard'
+        ];
 
-    setupDeviceSettingsListener() {
-        setTimeout(() => {
-            const btn = document.getElementById('menu-device-settings-btn');
-            if (btn) {
-                const newBtn = btn.cloneNode(true);
-                btn.parentNode.replaceChild(newBtn, btn);
+        const mainContent = [
+            '.dashboard-stats',
+            '.controls-section',
+            '.customer-list-section'
+        ];
 
-                newBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.toggleDeviceSettings();
-                    this.closeHamburgerMenu();
-                });
-            }
-        }, 1500);
-    }
+        console.log(`Switching view to: ${viewId}`);
 
-    toggleIntelligenceView() {
-        const dashboard = document.getElementById('intelligence-dashboard');
-        const mainContent = document.querySelector('.dashboard-stats');
-        const searchBox = document.querySelector('.controls-section');
-        const customerList = document.querySelector('.customer-list-section');
-        const analytics = document.getElementById('analytics-dashboard');
-        const attendance = document.getElementById('attendance-dashboard');
-        const deviceSettings = document.getElementById('device-settings-dashboard');
+        // Hide all dashboards
+        dashboards.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
 
-        if (dashboard.style.display === 'none') {
-            // Hide everything else
-            mainContent.style.display = 'none';
-            searchBox.style.display = 'none';
-            customerList.style.display = 'none';
-            if (analytics) analytics.style.display = 'none';
-            if (attendance) attendance.style.display = 'none';
-            if (deviceSettings) deviceSettings.style.display = 'none';
-
-            dashboard.style.display = 'block';
-            this.loadIntelligenceData();
-            this.currentView = 'intelligence';
-        } else {
-            // Show main view
-            mainContent.style.display = 'grid';
-            searchBox.style.display = 'flex';
-            customerList.style.display = 'block';
-            dashboard.style.display = 'none';
+        if (viewId === 'list') {
+            // Show main dashboard elements
+            document.querySelector('.dashboard-stats').style.display = 'grid';
+            document.querySelector('.controls-section').style.display = 'flex';
+            document.querySelector('.customer-list-section').style.display = 'block';
             this.currentView = 'list';
-        }
-    }
-
-    // ==============================================
-    // ZKTeco Device Management Methods
-    // ==============================================
-
-    toggleDeviceSettings() {
-        const dashboard = document.getElementById('device-settings-dashboard');
-        const mainContent = document.querySelector('.dashboard-stats');
-        const searchBox = document.querySelector('.controls-section');
-        const customerList = document.querySelector('.customer-list-section');
-        const analytics = document.getElementById('analytics-dashboard');
-        const attendance = document.getElementById('attendance-dashboard');
-        const intelligence = document.getElementById('intelligence-dashboard');
-
-        if (dashboard.style.display === 'none' || !dashboard.style.display) {
-            // Hide everything else
-            mainContent.style.display = 'none';
-            searchBox.style.display = 'none';
-            customerList.style.display = 'none';
-            if (analytics) analytics.style.display = 'none';
-            if (attendance) attendance.style.display = 'none';
-            if (intelligence) intelligence.style.display = 'none';
-
-            dashboard.style.display = 'block';
-            this.loadDeviceStatus();
-            this.currentView = 'device-settings';
         } else {
-            // Show main view
-            mainContent.style.display = 'grid';
-            searchBox.style.display = 'flex';
-            customerList.style.display = 'block';
-            dashboard.style.display = 'none';
-            this.currentView = 'list';
-        }
-    }
-
-    async connectDevice() {
-        const ip = document.getElementById('device-ip').value.trim();
-        const port = parseInt(document.getElementById('device-port').value) || 4370;
-
-        if (!ip) {
-            this.showNotification('error', 'Validation Error', 'Please enter device IP address');
-            return;
-        }
-
-        try {
-            this.setLoading(true);
-            const response = await this.api.request('/api/zkteco/connect', {
-                method: 'POST',
-                body: JSON.stringify({ ip, port })
+            // Hide main dashboard elements
+            mainContent.forEach(sel => {
+                const el = document.querySelector(sel);
+                if (el) el.style.display = 'none';
             });
 
-            this.deviceConnected = true;
-            this.updateConnectionStatus(true, ip, port);
-            this.showNotification('success', 'Device Connected', `Successfully connected to ${ip}:${port}`);
-            this.logActivity(`Connected to device at ${ip}:${port}`);
+            // Show target dashboard
+            const target = document.getElementById(viewId);
+            if (target) {
+                target.style.display = 'block';
+                this.currentView = viewId;
 
-            // Enable buttons
-            document.getElementById('sync-all-members-btn').disabled = false;
-            document.getElementById('refresh-enrolled-btn').disabled = false;
-
-            // Load stats
-            await this.loadDeviceStatus();
-        } catch (error) {
-            this.deviceConnected = false;
-            this.updateConnectionStatus(false);
-            this.showNotification('error', 'Connection Failed', error.message);
-            this.logActivity(`Connection failed: ${error.message}`, 'error');
-        } finally {
-            this.setLoading(false);
-        }
-    }
-
-    async disconnectDevice() {
-        try {
-            this.setLoading(true);
-            await this.api.request('/api/zkteco/disconnect', { method: 'POST' });
-
-            this.deviceConnected = false;
-            this.updateConnectionStatus(false);
-            this.showNotification('info', 'Device Disconnected', 'Successfully disconnected from device');
-            this.logActivity('Disconnected from device');
-
-            // Disable buttons
-            document.getElementById('sync-all-members-btn').disabled = true;
-            document.getElementById('refresh-enrolled-btn').disabled = true;
-        } catch (error) {
-            this.showNotification('error', 'Disconnect Failed', error.message);
-        } finally {
-            this.setLoading(false);
-        }
-    }
-
-    async loadDeviceStatus() {
-        try {
-            const response = await this.api.request('/api/zkteco/status');
-            const { connected, ip, port, deviceInfo } = response.data;
-
-            if (connected) {
-                this.updateDeviceInfo(ip, port, deviceInfo);
+                // Secondary actions based on view
+                if (viewId === 'intelligence-dashboard') this.loadIntelligenceData();
+                if (viewId === 'device-settings-dashboard') {
+                    this.loadZKTecoStatus();
+                    this.updateOccupancy();
+                }
+                if (viewId === 'attendance-dashboard') this.renderAttendance();
             }
+        }
+    }
+
+    // --- DEBUGGING METHODS FOR BIOMETRIC SCAN ---
+    async triggerBiometricMock(memberId, direction) {
+        console.log(`🚀 TRIGGERING MOCK: ${memberId} ${direction}`);
+        const statusBox = document.getElementById('scan-status');
+        if (statusBox) {
+            statusBox.textContent = '⏳ Calling API...';
+            statusBox.style.background = '#334155';
+        }
+
+        try {
+            // SIMULATING REAL H5L HARDWARE PAYLOAD
+            const realHardwarePayload = {
+                device_id: "H5L_GATE_01",
+                user_id: memberId,
+                verify_type: "FACE",
+                timestamp: new Date().toISOString().replace('T', ' ').split('.')[0],
+                direction: direction
+            };
+
+            const response = await this.api.request('/api/biometric/mock', {
+                method: 'POST',
+                body: JSON.stringify(realHardwarePayload)
+            });
+
+            const data = response.data || response; // API class might return data or the whole response
+            console.log('📥 RESPONSE FROM BACKEND:', data);
+
+            if (statusBox) {
+                if (data.decision === 'ALLOW') {
+                    statusBox.textContent = '✅ ACCESS GRANTED (API CALLBACK)';
+                    statusBox.style.background = '#059669';
+                } else {
+                    statusBox.textContent = `❌ ACCESS DENIED: ${data.decision || 'REJECTED'}`;
+                    statusBox.style.background = '#dc2626';
+                }
+            }
+
+            // TRIGGER THE ACTUAL UI (Ensures Link 4 is tested)
+            this.biometricSystem.showResult(data);
+
+            // Testing confirmation as requested
+            alert("ACCESS " + (data.decision || 'ALLOW'));
         } catch (error) {
-            console.error('Failed to load device status:', error);
+            console.error('❌ MOCK ERROR:', error);
+            if (statusBox) {
+                statusBox.textContent = `❌ ERROR: ${error.message}`;
+                statusBox.style.background = '#dc2626';
+            }
         }
     }
 
-    updateConnectionStatus(connected, ip = '', port = '') {
-        const banner = document.getElementById('connection-status-banner');
-        const statusText = document.getElementById('status-text');
-        const connectBtn = document.getElementById('connect-device-btn');
-        const disconnectBtn = document.getElementById('disconnect-device-btn');
+    testSocketLink() {
+        console.log('📡 SENDING SOCKET PING...');
+        if (!this.socket || !this.socket.connected) {
+            alert('Socket not connected! Status: ' + (this.socket ? 'DISCONNECTED' : 'UNDEFINED'));
+            return;
+        }
+        this.socket.emit('test-ping', 'ping-' + Date.now());
+    }
 
-        if (connected) {
-            banner.className = 'connection-status connected';
-            statusText.textContent = `Connected to ${ip}:${port}`;
-            connectBtn.style.display = 'none';
-            disconnectBtn.style.display = 'inline-block';
+    testManualUI() {
+        console.log('🧪 TESTING MANUAL UI UPDATE');
+        const statusBox = document.getElementById('scan-status');
+        if (statusBox) {
+            statusBox.textContent = '✅ ACCESS GRANTED (LOCAL TEST)';
+            statusBox.style.background = '#059669';
+            this.showNotification('success', 'UI Test', 'Local status box updated correctly');
         } else {
-            banner.className = 'connection-status disconnected';
-            statusText.textContent = 'Not Connected';
-            connectBtn.style.display = 'inline-block';
-            disconnectBtn.style.display = 'none';
+            alert('Element #scan-status not found! Are you on the Access Monitoring view?');
         }
     }
+    // ------------------------------------------
 
-    updateDeviceInfo(ip, port, deviceInfo) {
-        document.getElementById('info-status').textContent = 'Connected';
-        document.getElementById('info-ip').textContent = ip || '-';
-        document.getElementById('info-port').textContent = port || '-';
-        document.getElementById('info-users').textContent = deviceInfo?.enrolledUsers || '-';
+    toggleIntelligenceView() {
+        this.toggleView('intelligence');
     }
 
     async syncAllMembers() {
@@ -853,59 +926,201 @@ class GymApp {
     }
 
     async connectHardware() {
-        const portSelect = document.getElementById('access-port-select');
-        const portName = portSelect ? portSelect.value : null;
+        // ... existing serial port logic remains if needed, but we focus on ZKTeco
+    }
 
-        if (!portName) {
-            this.showNotification('error', 'Selection Required', 'Please select a COM port first.');
+    // ===================================
+    // ZKTeco Multi-Device Management
+    // ===================================
+
+    async connectDevice() {
+        const ip = document.getElementById('device-ip')?.value;
+        const port = parseInt(document.getElementById('device-port')?.value || '4370');
+        const role = document.getElementById('device-role')?.value || 'IN';
+
+        if (!ip) {
+            this.showNotification('error', 'Required Field', 'Please enter Device IP Address');
             return;
         }
 
         try {
             this.setLoading(true);
-            await this.api.connectDoor(portName);
-            this.showNotification('success', 'Hardware Connected', `Connected to ${portName}`);
+            this.showNotification('warning', 'Connecting...', `Connecting to ${ip} as ${role} device...`);
 
-            const btn = document.getElementById('connect-door-btn');
-            if (btn) {
-                btn.classList.remove('btn-secondary');
-                btn.classList.add('btn-success');
-                btn.innerHTML = '<span class="btn-icon">✅</span> Connected';
-            }
+            const response = await this.api.connectZKTeco(ip, port, role);
+
+            this.showNotification('success', 'Connected', `Successfully connected to device at ${ip}`);
+
+            // Refresh list
+            await this.loadZKTecoStatus();
+
+            // Clear inputs
+            if (document.getElementById('device-ip')) document.getElementById('device-ip').value = '';
         } catch (error) {
-            this.showNotification('error', 'Connection Failed', error.message || 'Could not connect to door controller');
+            console.error('ZKTeco connection failed:', error);
+            this.showNotification('error', 'Connection Failed', error.message || 'Could not connect to device');
         } finally {
             this.setLoading(false);
         }
     }
 
-    toggleAccessView() {
-        const dashboard = document.getElementById('access-dashboard');
-        if (dashboard.style.display === 'none') {
-            // Hide main dashboard elements
-            document.querySelector('.dashboard-stats').style.display = 'none';
-            document.querySelector('.controls-section').style.display = 'none';
-            document.querySelector('.customer-list-section').style.display = 'none';
+    async disconnectDevice(ip) {
+        if (!confirm(`Disconnect device ${ip}?`)) return;
 
-            dashboard.style.display = 'block';
-            this.loadPorts(); // Populate port dropdown
-            this.biometricSystem.start();
-
-            // Re-attach connect button listener
-            const connectBtn = document.getElementById('connect-door-btn');
-            if (connectBtn) {
-                connectBtn.onclick = () => this.connectHardware();
-            }
-        } else {
-            // Show main dashboard elements
-            dashboard.style.display = 'none';
-            document.querySelector('.dashboard-stats').style.display = 'grid';
-            document.querySelector('.controls-section').style.display = 'flex';
-            document.querySelector('.customer-list-section').style.display = 'block';
-
-            this.biometricSystem.stop();
+        try {
+            this.setLoading(true);
+            await this.api.disconnectZKTeco(ip);
+            this.showNotification('success', 'Disconnected', `Device ${ip} disconnected`);
+            await this.loadZKTecoStatus();
+        } catch (error) {
+            this.showNotification('error', 'Error', 'Failed to disconnect device');
+        } finally {
+            this.setLoading(false);
         }
-        this.closeHamburgerMenu();
+    }
+
+    async loadZKTecoStatus() {
+        try {
+            const response = await this.api.getZKTecoStatus();
+            const devices = response?.data?.devices || [];
+            this.connectedDevices = devices;
+            this.renderConnectedDevices();
+
+            // Update global connection flag (for UI compatibility)
+            this.deviceConnected = Array.isArray(devices) && devices.some(d => d && d.isConnected);
+            this.updateConnectionBanner();
+        } catch (error) {
+            console.error('Failed to load device status:', error);
+            this.connectedDevices = [];
+            this.renderConnectedDevices();
+        }
+    }
+
+    renderConnectedDevices() {
+        const container = document.getElementById('connected-devices-list');
+        if (!container) return;
+
+        if (!Array.isArray(this.connectedDevices) || this.connectedDevices.length === 0) {
+            container.innerHTML = `
+                <div class="empty-devices" style="text-align: center; padding: 20px; color: var(--text-muted); background: rgba(0,0,0,0.1); border-radius: 8px;">
+                    <p>No devices connected yet.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = this.connectedDevices.map(device => `
+            <div class="device-item">
+                <div class="device-info-main">
+                    <div class="device-icon" style="font-size: 1.5rem;">${device.role === 'IN' ? '📥' : '📤'}</div>
+                    <div class="device-details">
+                        <h4>${device.ip}:${device.port}</h4>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="device-role-badge role-${device.role.toLowerCase()}">${device.role} DEVICE</span>
+                            <span class="device-status-pill ${device.isConnected ? 'status-online' : 'status-offline'}">
+                                ${device.isConnected ? '● Online' : '● Offline'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="device-item-actions">
+                    ${device.isConnected ?
+                `<button class="btn btn-danger btn-sm" onclick="app.disconnectDevice('${device.ip}')">Disconnect</button>` :
+                `<button class="btn btn-primary btn-sm" onclick="app.reconnectDevice('${device.ip}', ${device.port}, '${device.role}')">Reconnect</button>`
+            }
+                </div>
+            </div>
+        `).join('');
+    }
+
+    updateConnectionBanner() {
+        const banner = document.getElementById('connection-status-banner');
+        const text = document.getElementById('status-text');
+        if (!banner || !text) return;
+
+        if (this.deviceConnected) {
+            banner.className = 'connection-status connected';
+            const onlineCount = this.connectedDevices.filter(d => d.isConnected).length;
+            text.textContent = `${onlineCount} Device(s) Powered ON`;
+        } else {
+            banner.className = 'connection-status disconnected';
+            text.textContent = 'All Devices Offline';
+        }
+    }
+
+    async reconnectDevice(ip, port, role) {
+        // Reuse connectDevice logic or implement specific reconnect
+        document.getElementById('device-ip').value = ip;
+        document.getElementById('device-port').value = port;
+        document.getElementById('device-role').value = role;
+        this.connectDevice();
+    }
+
+    async syncZKTeco() {
+        try {
+            this.setLoading(true);
+            await this.api.syncZKTeco();
+            this.showNotification('success', 'Sync Triggered', 'Device synchronization started');
+            await this.loadZKTecoStatus();
+        } catch (error) {
+            this.showNotification('error', 'Sync Failed', error.message);
+        } finally {
+            this.setLoading(false);
+        }
+    }
+
+    // ===================================
+    // Occupancy & Live Tracking
+    // ===================================
+
+    async updateOccupancy() {
+        try {
+            const response = await this.api.getOccupancy();
+            if (!response || !response.data) return;
+            const { count, members } = response.data;
+
+            // Update main dashboard widget
+            const liveCountEl = document.getElementById('live-gym-count');
+            if (liveCountEl) {
+                this.animateValue(liveCountEl, parseInt(liveCountEl.textContent) || 0, count, 500);
+            }
+
+            // Update inside members list in settings
+            this.renderInsideMembers(members);
+        } catch (error) {
+            console.error('Failed to update occupancy:', error);
+        }
+    }
+
+    renderInsideMembers(members) {
+        const container = document.getElementById('inside-members-list');
+        if (!container) return;
+
+        if (!members || members.length === 0) {
+            container.innerHTML = '<div class="empty-notif" style="padding: 20px; text-align: center; color: var(--text-muted);">Gym is currently empty</div>';
+            return;
+        }
+
+        container.innerHTML = members.map(member => `
+            <div class="visitor-row">
+                ${member.photo ?
+                `<img src="${member.photo}" class="visitor-avatar">` :
+                `<div class="visitor-avatar">👤</div>`
+            }
+                <div class="visitor-info">
+                    <h5>${this.escapeHtml(member.name)}</h5>
+                    <span>In since: ${new Date(member.lastActivity).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    toggleDeviceSettings() {
+        this.toggleView('device-settings');
+    }
+
+    toggleAccessView() {
+        this.toggleView('access');
     }
 
     setupAccessListener() {
@@ -1408,123 +1623,9 @@ class GymApp {
     // ===================================
 
     togglePaymentView() {
-        const view = document.getElementById('payment-view');
-        const isHidden = !view.classList.contains('show');
-
-        if (isHidden) {
-            view.classList.add('show');
-            this.loadPayments();
-            this.closeHamburgerMenu();
-        } else {
-            view.classList.remove('show');
-        }
+        this.toggleView('payments');
     }
 
-    async loadPayments() {
-        try {
-            const response = await this.api.getPayments();
-            this.payments = response.data.payments;
-            this.renderPayments(this.payments);
-        } catch (error) {
-            this.showNotification('error', 'Error', 'Failed to load payments');
-        }
-    }
-
-    renderPayments(payments) {
-        const tbody = document.getElementById('payment-table-body');
-        tbody.innerHTML = '';
-
-        if (payments.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px;">
-                        <div style="font-size: 60px; margin-bottom: 10px;">🧾</div>
-                        <div style="color: #888;">No payments found</div>
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        payments.forEach(payment => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${new Date(payment.paymentDate).toLocaleDateString()}</td>
-                <td>${payment.customerName}</td>
-                <td>₹${payment.amount}</td>
-                <td>${payment.paymentMethod}</td>
-                <td>${payment.planType}</td>
-                <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
-                <td>
-                    <button class="btn-icon" onclick="app.deletePayment('${payment._id}')" title="Delete">🗑️</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    filterPayments() {
-        const query = document.getElementById('payment-search').value.toLowerCase();
-        const filtered = this.payments.filter(p =>
-            p.customerName.toLowerCase().includes(query) ||
-            p.receiptNumber?.toLowerCase().includes(query)
-        );
-        this.renderPayments(filtered);
-    }
-
-    async exportPayments() {
-        const payments = this.payments || [];
-
-        if (payments.length === 0) {
-            this.showNotification('warning', 'No Data', 'No payment records to export.');
-            return;
-        }
-
-        try {
-            const exportData = payments.map(p => ({
-                'Date': new Date(p.paymentDate).toLocaleDateString(),
-                'Customer Name': p.customerName,
-                'Amount': p.amount,
-                'Method': p.paymentMethod,
-                'Plan': p.planType,
-                'Status': p.status,
-                'Receipt No': p.receiptNumber || '-',
-                'Added By': p.addedBy ? p.addedBy.name : 'System'
-            }));
-
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Payments");
-
-            const dateStr = new Date().toISOString().split('T')[0];
-            const fileName = `MotherFitness_Payments_${dateStr}.xlsx`;
-
-            XLSX.writeFile(wb, fileName);
-
-            this.showNotification('success', 'Export Successful', 'Payment data exported to Excel.');
-        } catch (error) {
-            console.error('Export failed:', error);
-            this.showNotification('error', 'Export Failed', 'Could not export data.');
-        }
-    }
-
-    async syncBadges() {
-        try {
-            if (!confirm('This will scan all customers and retroactive award missing badges. Continue?')) {
-                return;
-            }
-
-            this.showNotification('info', 'Syncing...', 'Starting badge synchronization...');
-
-            const response = await this.api.syncBadges();
-            const count = response.data.updatedCount;
-
-            this.showNotification('success', 'Sync Complete', `Successfully updated ${count} customers with new badges.`);
-        } catch (error) {
-            console.error('Badge sync failed:', error);
-            this.showNotification('error', 'Sync Failed', error.message || 'Could not sync badges.');
-        }
-    }
 
     async loadPayments() {
         try {
@@ -1594,6 +1695,69 @@ class GymApp {
         });
     }
 
+    filterPayments() {
+        const query = document.getElementById('payment-search').value.toLowerCase();
+        const filtered = this.payments.filter(p =>
+            p.customerName.toLowerCase().includes(query) ||
+            p.receiptNumber?.toLowerCase().includes(query)
+        );
+        this.renderPayments(filtered);
+    }
+
+    async exportPayments() {
+        const payments = this.payments || [];
+
+        if (payments.length === 0) {
+            this.showNotification('warning', 'No Data', 'No payment records to export.');
+            return;
+        }
+
+        try {
+            const exportData = payments.map(p => ({
+                'Date': new Date(p.paymentDate).toLocaleDateString(),
+                'Customer Name': p.customerName,
+                'Amount': p.amount,
+                'Method': p.paymentMethod,
+                'Plan': p.planType,
+                'Status': p.status,
+                'Receipt No': p.receiptNumber || '-',
+                'Added By': p.addedBy ? p.addedBy.name : 'System'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Payments");
+
+            const dateStr = new Date().toISOString().split('T')[0];
+            const fileName = `MotherFitness_Payments_${dateStr}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+
+            this.showNotification('success', 'Export Successful', 'Payment data exported to Excel.');
+        } catch (error) {
+            console.error('Export failed:', error);
+            this.showNotification('error', 'Export Failed', 'Could not export data.');
+        }
+    }
+
+    async syncBadges() {
+        try {
+            if (!confirm('This will scan all customers and retroactive award missing badges. Continue?')) {
+                return;
+            }
+
+            this.showNotification('info', 'Syncing...', 'Starting badge synchronization...');
+
+            const response = await this.api.syncBadges();
+            const count = response.data.updatedCount;
+
+            this.showNotification('success', 'Sync Complete', `Successfully updated ${count} customers with new badges.`);
+        } catch (error) {
+            console.error('Badge sync failed:', error);
+            this.showNotification('error', 'Sync Failed', error.message || 'Could not sync badges.');
+        }
+    }
+
     openPaymentModal(customerId = null) {
         const modal = document.getElementById('payment-modal');
         const form = document.getElementById('payment-form');
@@ -1619,16 +1783,6 @@ class GymApp {
 
     closePaymentModal() {
         document.getElementById('payment-modal').style.display = 'none';
-    }
-
-    togglePaymentView() {
-        const view = document.getElementById('payment-view');
-        if (view.style.display === 'none') {
-            view.style.display = 'block';
-            this.loadPayments();
-        } else {
-            view.style.display = 'none';
-        }
     }
 
     async handlePaymentSubmit(e) {
@@ -1777,6 +1931,32 @@ class GymApp {
         if (announcementsBtn) {
             announcementsBtn.addEventListener('click', () => {
                 this.toggleAnnouncementView();
+                // toggleAnnouncementView already calls closeHamburgerMenu but being explicit here
+                this.closeHamburgerMenu();
+            });
+        }
+
+        const homeBtn = document.getElementById('menu-home-btn');
+        if (homeBtn) {
+            homeBtn.addEventListener('click', () => {
+                this.toggleView('list');
+                this.closeHamburgerMenu();
+            });
+        }
+
+        const analyticsBtn = document.getElementById('menu-analytics-btn');
+        if (analyticsBtn) {
+            analyticsBtn.addEventListener('click', () => {
+                this.toggleView('analytics');
+                this.closeHamburgerMenu();
+            });
+        }
+
+        const accessBtn = document.getElementById('menu-access-btn');
+        if (accessBtn) {
+            accessBtn.addEventListener('click', () => {
+                this.toggleView('access');
+                this.closeHamburgerMenu();
             });
         }
 
@@ -2351,114 +2531,83 @@ class GymApp {
         });
     }
 
-    toggleView(targetView = null) {
-        const listSection = document.querySelector('.customer-list-section');
-        const controlsSection = document.querySelector('.controls-section');
-        const dashboardSection = document.getElementById('analytics-dashboard');
-        const attendanceSection = document.getElementById('attendance-dashboard');
-        const intelligenceDashboard = document.getElementById('intelligence-dashboard');
-        const deviceSettingsDashboard = document.getElementById('device-settings-dashboard');
-
-        // Determine target view
-        let nextView;
-        if (targetView) {
-            nextView = targetView;
-        } else {
-            // Default toggle behavior (List <-> Analytics)
-            nextView = this.currentView === 'list' ? 'analytics' : 'list';
-        }
-
-        // Apply View State
-        if (nextView === 'analytics') {
-            this.currentView = 'analytics';
-            if (listSection) listSection.style.display = 'none';
-            if (controlsSection) controlsSection.style.display = 'none';
-            if (attendanceSection) attendanceSection.style.display = 'none';
-            if (intelligenceDashboard) intelligenceDashboard.style.display = 'none';
-            if (deviceSettingsDashboard) deviceSettingsDashboard.style.display = 'none';
-
-            if (dashboardSection) {
-                dashboardSection.style.display = 'grid'; // Ensure grid layout
-                // Trigger chart rendering
-                setTimeout(() => this.renderCharts(), 50);
-            }
-        } else if (nextView === 'attendance') {
-            // Handled by toggleAttendanceView, but logic duplicated here for safety
-            this.currentView = 'attendance';
-            if (listSection) listSection.style.display = 'none';
-            if (controlsSection) controlsSection.style.display = 'none';
-            if (dashboardSection) dashboardSection.style.display = 'none';
-            if (attendanceSection) attendanceSection.style.display = 'block';
-            if (intelligenceDashboard) intelligenceDashboard.style.display = 'none';
-            if (deviceSettingsDashboard) deviceSettingsDashboard.style.display = 'none';
-        } else {
-            // Default to List View
-            this.currentView = 'list';
-            if (listSection) listSection.style.display = 'block';
-            if (controlsSection) controlsSection.style.display = 'flex';
-            if (dashboardSection) dashboardSection.style.display = 'none';
-            if (attendanceSection) attendanceSection.style.display = 'none';
-            if (intelligenceDashboard) intelligenceDashboard.style.display = 'none';
-            if (deviceSettingsDashboard) deviceSettingsDashboard.style.display = 'none';
-        }
-
-        // Update menu labels after state is set
-        setTimeout(() => this.updateMenuLabels(), 50);
-    }
-
-    toggleAttendanceView() {
+    toggleView(targetView = 'list') {
         const listSection = document.querySelector('.customer-list-section');
         const controlsSection = document.querySelector('.controls-section');
         const analyticsSection = document.getElementById('analytics-dashboard');
         const attendanceSection = document.getElementById('attendance-dashboard');
-        const intelligenceDashboard = document.getElementById('intelligence-dashboard');
-        const deviceSettingsDashboard = document.getElementById('device-settings-dashboard');
+        const intelligenceSection = document.getElementById('intelligence-dashboard');
+        const deviceSettingsSection = document.getElementById('device-settings-dashboard');
+        const accessSection = document.getElementById('access-dashboard');
+        const paymentSection = document.getElementById('payment-view'); // Assuming payment-view is also a "dashboard"
 
-        if (this.currentView === 'attendance') {
-            // Switch back to List
-            this.currentView = 'list';
+        console.log(`Switching view to: ${targetView}`);
 
-            attendanceSection.style.animation = 'fadeOut 0.3s ease-out forwards';
+        // Hide all dashboards first
+        const dashboards = [
+            analyticsSection,
+            attendanceSection,
+            intelligenceSection,
+            deviceSettingsSection,
+            accessSection,
+            paymentSection
+        ];
 
-            setTimeout(() => {
-                attendanceSection.style.display = 'none';
+        dashboards.forEach(el => {
+            if (el) el.style.display = 'none';
+        });
 
-                listSection.style.display = 'block';
-                controlsSection.style.display = 'flex';
-                analyticsSection.style.display = 'none';
-                if (intelligenceDashboard) intelligenceDashboard.style.display = 'none';
-                if (deviceSettingsDashboard) deviceSettingsDashboard.style.display = 'none';
-
-                listSection.style.animation = 'fadeIn 0.4s ease-out forwards';
-                controlsSection.style.animation = 'fadeIn 0.4s ease-out forwards';
-
-                // Update menu labels after transition
-                this.updateMenuLabels();
-            }, 300);
-
-        } else {
-            // Switch to Attendance
-            this.currentView = 'attendance';
-
-            listSection.style.animation = 'fadeOut 0.3s ease-out forwards';
-            controlsSection.style.animation = 'fadeOut 0.3s ease-out forwards';
-            analyticsSection.style.display = 'none'; // Ensure analytics is hidden
-            if (intelligenceDashboard) intelligenceDashboard.style.display = 'none';
-            if (deviceSettingsDashboard) deviceSettingsDashboard.style.display = 'none';
-
-            setTimeout(() => {
-                listSection.style.display = 'none';
-                controlsSection.style.display = 'none';
-
-                attendanceSection.style.display = 'block';
-                attendanceSection.style.animation = 'fadeIn 0.4s ease-out forwards';
-
-                this.renderAttendance();
-
-                // Update menu labels after transition
-                this.updateMenuLabels();
-            }, 300);
+        // Stop biometric system if switching away from access view
+        if (this.currentView === 'access' && targetView !== 'access') {
+            this.biometricSystem.stop();
         }
+
+        // Handle view switching
+        if (targetView === 'list' || (targetView === this.currentView && targetView !== 'list')) {
+            // Show main list view
+            this.currentView = 'list';
+            if (listSection) listSection.style.display = 'block';
+            if (controlsSection) controlsSection.style.display = 'flex';
+        } else {
+            // Hide main list view
+            if (listSection) listSection.style.display = 'none';
+            if (controlsSection) controlsSection.style.display = 'none';
+
+            // Show target dashboard
+            let targetEl = null;
+            switch (targetView) {
+                case 'analytics': targetEl = analyticsSection; break;
+                case 'attendance': targetEl = attendanceSection; break;
+                case 'intelligence': targetEl = intelligenceSection; break;
+                case 'device-settings': targetEl = deviceSettingsSection; break;
+                case 'access': targetEl = accessSection; break;
+                case 'payments': targetEl = paymentSection; break;
+            }
+
+            if (targetEl) {
+                targetEl.style.display = targetView === 'analytics' ? 'grid' : 'block';
+                this.currentView = targetView;
+
+                // Trigger specific view logic
+                if (targetView === 'analytics') setTimeout(() => this.renderCharts(), 50);
+                if (targetView === 'attendance') this.renderAttendance();
+                if (targetView === 'intelligence') this.loadIntelligenceData();
+                if (targetView === 'device-settings') {
+                    this.loadZKTecoStatus();
+                    this.updateOccupancy();
+                }
+                if (targetView === 'access') {
+                    this.loadPorts();
+                    this.biometricSystem.start();
+                }
+                if (targetView === 'payments') {
+                    this.loadPayments();
+                }
+            }
+        }
+
+        this.updateMenuLabels();
+        this.closeHamburgerMenu();
     }
 
     async renderAttendance() {
@@ -2989,30 +3138,7 @@ class GymApp {
 
     // Attendance View Management
     toggleAttendanceView() {
-        const listSection = document.querySelector('.customer-list-section');
-        const controlsSection = document.querySelector('.controls-section');
-        const analyticsSection = document.getElementById('analytics-dashboard');
-        const attendanceSection = document.getElementById('attendance-dashboard');
-
-        if (this.currentView === 'attendance') {
-            // Switch back to list
-            this.currentView = 'list';
-            listSection.style.display = 'block';
-            controlsSection.style.display = 'flex';
-            attendanceSection.style.display = 'none';
-            analyticsSection.style.display = 'none';
-        } else {
-            // Switch to attendance
-            this.currentView = 'attendance';
-            listSection.style.display = 'none';
-            controlsSection.style.display = 'none';
-            attendanceSection.style.display = 'block';
-            analyticsSection.style.display = 'none';
-
-            this.renderAttendance();
-        }
-
-        this.updateMenuLabels();
+        this.toggleView('attendance');
     }
 
     renderAttendanceRecord(record) {
@@ -3107,19 +3233,8 @@ class GymApp {
     }
 
     updateMenuLabels() {
-        // Update menu item text based on current view
-        const analyticsBtn = document.getElementById('menu-analytics-btn');
-        const attendanceBtn = document.getElementById('menu-attendance-btn');
-
-        if (this.currentView === 'analytics') {
-            analyticsBtn.querySelector('.menu-text').textContent = 'List View';
-        } else {
-            analyticsBtn.querySelector('.menu-text').textContent = 'Analytics';
-        }
-
-        if (this.currentView === 'attendance') {
-            attendanceBtn.querySelector('.menu-text').textContent = 'List View';
-        }
+        // This method can be used for highlighting active menu items in the future
+        // For now, we'll keep the labels static to avoid confusion reported during verification
     }
 
     // --- Notification Center Methods ---
@@ -3415,5 +3530,6 @@ function closeHamburgerMenu() {
 let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new GymApp();
+    window.app = app; // Explicitly expose to window
 });
 

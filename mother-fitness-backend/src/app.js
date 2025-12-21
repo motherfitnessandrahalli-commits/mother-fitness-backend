@@ -99,6 +99,8 @@ app.use('/api/announcements', require('./routes/announcement.routes'));
 app.use('/api/zkteco', require('./routes/zkteco.routes'));
 app.use('/api/intelligence', require('./routes/intelligence.routes'));
 app.use('/api/sync', require('./routes/sync.routes'));
+app.use('/api/access', require('./routes/access.routes'));
+app.use('/api/biometric', require('./routes/biometric.routes'));
 
 // Serve Member Portal at /member-app (PWA) - AFTER API routes
 app.use('/member-app', express.static(path.join(__dirname, '../public/member-app')));
