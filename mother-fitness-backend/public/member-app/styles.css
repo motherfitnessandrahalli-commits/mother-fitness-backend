@@ -330,56 +330,6 @@ body {
 }
 
 /* ===================================
-   QR Code Page
-   =================================== */
-
-.qr-container {
-    background: var(--card-bg);
-    border-radius: 20px;
-    padding: 30px;
-    text-align: center;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-}
-
-.qr-info {
-    margin-bottom: 30px;
-}
-
-.qr-info h2 {
-    font-size: 1.5rem;
-    margin-bottom: 5px;
-}
-
-.qr-info p {
-    color: var(--text-secondary);
-}
-
-.qr-code {
-    display: inline-block;
-    padding: 20px;
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-    margin: 20px 0;
-}
-
-.qr-instructions {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 2px dashed var(--border-color);
-}
-
-.qr-instructions p {
-    font-size: 1rem;
-    margin: 10px 0;
-}
-
-.text-small {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-/* ===================================
    List Containers
    =================================== */
 
@@ -648,8 +598,7 @@ body {
 .member-card,
 .status-card,
 .profile-section,
-.list-container,
-.qr-container {
+.list-container {
     animation: fadeIn 0.6s ease-out forwards;
 }
 
@@ -914,6 +863,7 @@ body {
     .app-header h1 {
         font-size: 1.2rem;
     }
+
     .header-content {
         gap: 10px;
     }
@@ -937,6 +887,7 @@ body {
         font-size: 2.5rem;
     }
 }
+
 /* ===================================
    Hamburger Menu
    =================================== */
@@ -1052,7 +1003,7 @@ body {
     padding: 15px;
     background: var(--card-bg);
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     border-left: 5px solid #3498db;
     transition: transform 0.2s ease;
 }
@@ -1081,24 +1032,63 @@ body {
 }
 
 /* Announcement Types */
-.announcement-item.important { border-left-color: #e74c3c; background: rgba(231, 76, 60, 0.05); }
-.announcement-item.offer { border-left-color: #f1c40f; background: rgba(241, 196, 15, 0.05); }
-.announcement-item.event { border-left-color: #9b59b6; background: rgba(155, 89, 182, 0.05); }
-.announcement-item.maintenance { border-left-color: #e67e22; background: rgba(230, 126, 34, 0.05); }
-.announcement-item.info { border-left-color: #3498db; background: rgba(52, 152, 219, 0.05); }
+.announcement-item.important {
+    border-left-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.05);
+}
+
+.announcement-item.offer {
+    border-left-color: #f1c40f;
+    background: rgba(241, 196, 15, 0.05);
+}
+
+.announcement-item.event {
+    border-left-color: #9b59b6;
+    background: rgba(155, 89, 182, 0.05);
+}
+
+.announcement-item.maintenance {
+    border-left-color: #e67e22;
+    background: rgba(230, 126, 34, 0.05);
+}
+
+.announcement-item.info {
+    border-left-color: #3498db;
+    background: rgba(52, 152, 219, 0.05);
+}
 
 /* Dark Mode Adjustments */
 body.dark-mode .announcement-item {
     background: var(--card-bg-dark);
     box-shadow: none;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-left-width: 5px;
 }
-body.dark-mode .announcement-item.important { background: rgba(231, 76, 60, 0.15); border-left-color: #e74c3c; }
-body.dark-mode .announcement-item.offer { background: rgba(241, 196, 15, 0.15); border-left-color: #f1c40f; }
-body.dark-mode .announcement-item.event { background: rgba(155, 89, 182, 0.15); border-left-color: #9b59b6; }
-body.dark-mode .announcement-item.maintenance { background: rgba(230, 126, 34, 0.15); border-left-color: #e67e22; }
-body.dark-mode .announcement-item.info { background: rgba(52, 152, 219, 0.15); border-left-color: #3498db; }
+
+body.dark-mode .announcement-item.important {
+    background: rgba(231, 76, 60, 0.15);
+    border-left-color: #e74c3c;
+}
+
+body.dark-mode .announcement-item.offer {
+    background: rgba(241, 196, 15, 0.15);
+    border-left-color: #f1c40f;
+}
+
+body.dark-mode .announcement-item.event {
+    background: rgba(155, 89, 182, 0.15);
+    border-left-color: #9b59b6;
+}
+
+body.dark-mode .announcement-item.maintenance {
+    background: rgba(230, 126, 34, 0.15);
+    border-left-color: #e67e22;
+}
+
+body.dark-mode .announcement-item.info {
+    background: rgba(52, 152, 219, 0.15);
+    border-left-color: #3498db;
+}
 
 
 /* Enhanced Gym Count Card with Animations */
@@ -1124,12 +1114,10 @@ body.dark-mode .announcement-item.info { background: rgba(52, 152, 219, 0.15); b
     left: -50%;
     width: 200%;
     height: 200%;
-    background: linear-gradient(
-        45deg,
-        transparent,
-        rgba(255, 255, 255, 0.1),
-        transparent
-    );
+    background: linear-gradient(45deg,
+            transparent,
+            rgba(255, 255, 255, 0.1),
+            transparent);
     transform: rotate(45deg);
     animation: shimmer 3s infinite;
 }
@@ -1138,6 +1126,7 @@ body.dark-mode .announcement-item.info { background: rgba(52, 152, 219, 0.15); b
     0% {
         transform: translateX(-100%) translateY(-100%) rotate(45deg);
     }
+
     100% {
         transform: translateX(100%) translateY(100%) rotate(45deg);
     }
@@ -1163,10 +1152,13 @@ body.dark-mode .announcement-item.info { background: rgba(52, 152, 219, 0.15); b
 }
 
 @keyframes iconPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
         box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
     }
+
     50% {
         transform: scale(1.05);
         box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
@@ -1209,6 +1201,7 @@ body.dark-mode .announcement-item.info { background: rgba(52, 152, 219, 0.15); b
     0% {
         background-position: 0% center;
     }
+
     100% {
         background-position: 200% center;
     }
@@ -1261,9 +1254,12 @@ body.dark-mode .announcement-item.info { background: rgba(52, 152, 219, 0.15); b
 }
 
 @keyframes badgePulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.05);
     }
@@ -1292,9 +1288,12 @@ body.dark-mode .announcement-item.info { background: rgba(52, 152, 219, 0.15); b
 }
 
 @keyframes urgentPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
     }
+
     50% {
         box-shadow: 0 0 25px rgba(255, 107, 107, 0.6);
     }
@@ -1372,9 +1371,12 @@ body.dark-mode .badge.locked {
 }
 
 @keyframes badgeGlow {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
     }
+
     50% {
         box-shadow: 0 0 20px rgba(102, 126, 234, 0.8), 0 0 30px rgba(255, 215, 0, 0.5);
     }
@@ -1395,8 +1397,13 @@ body.dark-mode .badge.locked {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .badge-popup-overlay {
@@ -1427,6 +1434,7 @@ body.dark-mode .badge.locked {
         transform: scale(0.5) translateY(-100px);
         opacity: 0;
     }
+
     to {
         transform: scale(1) translateY(0);
         opacity: 1;
@@ -1440,9 +1448,12 @@ body.dark-mode .badge.locked {
 }
 
 @keyframes iconBounce {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0) scale(1);
     }
+
     50% {
         transform: translateY(-15px) scale(1.1);
     }
@@ -1518,6 +1529,7 @@ body.dark-mode .badge.locked {
         opacity: 1;
         transform: translateX(0) rotate(0deg);
     }
+
     100% {
         top: 100%;
         opacity: 0;
@@ -1571,7 +1583,7 @@ body.dark-mode .badge.locked {
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 25px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     border: 1px solid var(--border-color);
 }
 
@@ -1630,11 +1642,11 @@ body.dark-mode .badge.locked {
 /* Dark Mode */
 body.dark-mode .monthly-progress-card {
     background: var(--card-bg-dark);
-    border-color: rgba(255,255,255,0.1);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 body.dark-mode .stat-item {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 /* Responsive */
@@ -1694,7 +1706,8 @@ body.dark-mode .btn-download-receipt {
     max-height: calc(100vh - 120px);
     overflow-y: auto;
     padding: 15px;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Smooth scrolling on iOS */
 }
 
 /* Modern payment item design */
@@ -1706,7 +1719,7 @@ body.dark-mode .btn-download-receipt {
     display: flex;
     align-items: center;
     gap: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     border: 1px solid var(--border-color);
     transition: all 0.3s ease;
 }
@@ -1733,7 +1746,8 @@ body.dark-mode .btn-download-receipt {
 /* Item content styling */
 .payment-item .item-content {
     flex: 1;
-    min-width: 0; /* Prevent text overflow */
+    min-width: 0;
+    /* Prevent text overflow */
 }
 
 .item-title {
@@ -1804,7 +1818,7 @@ body.dark-mode .btn-download-receipt {
 /* Dark mode adjustments */
 body.dark-mode .payment-item {
     background: var(--card-bg-dark);
-    border-color: rgba(255,255,255,0.1);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 body.dark-mode .payment-item:hover {

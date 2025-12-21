@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const CloudSyncService = require('../services/CloudSyncService');
 
 const attendanceSchema = new mongoose.Schema({
     attendanceId: {
@@ -64,6 +65,11 @@ attendanceSchema.index({ customerId: 1, date: 1 }, { unique: true });
 attendanceSchema.index({ date: 1 });
 attendanceSchema.index({ timestamp: -1 });
 attendanceSchema.index({ membershipStatus: 1 });
+
+// Cloud Sync Hook
+attendanceSchema.post('save', function (doc) {
+    CloudSyncService.syncRecord('attendance', doc);
+});
 
 const Attendance = mongoose.model('Attendance', attendanceSchema);
 

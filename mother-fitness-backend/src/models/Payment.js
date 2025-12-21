@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const CloudSyncService = require('../services/CloudSyncService');
 
 const paymentSchema = new mongoose.Schema({
     paymentId: {
@@ -82,6 +83,11 @@ paymentSchema.index({ paymentId: 1 });
 paymentSchema.index({ customerId: 1 });
 paymentSchema.index({ paymentDate: -1 });
 paymentSchema.index({ status: 1 });
+
+// Cloud Sync Hook
+paymentSchema.post('save', function (doc) {
+    CloudSyncService.syncRecord('payment', doc);
+});
 
 const Payment = mongoose.model('Payment', paymentSchema);
 

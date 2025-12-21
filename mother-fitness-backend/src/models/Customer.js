@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const CloudSyncService = require('../services/CloudSyncService');
 
 const customerSchema = new mongoose.Schema({
     customerId: {
@@ -190,6 +191,11 @@ customerSchema.index({ phone: 1 });
 customerSchema.index({ validity: 1 });
 customerSchema.index({ createdAt: -1 });
 customerSchema.index({ memberId: 1 });
+
+// Cloud Sync Hook
+customerSchema.post('save', function (doc) {
+    CloudSyncService.syncRecord('customer', doc);
+});
 
 const Customer = mongoose.model('Customer', customerSchema);
 

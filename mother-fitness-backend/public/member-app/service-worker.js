@@ -3,7 +3,6 @@ const urlsToCache = [
     './',
     './index.html',
     './dashboard.html',
-    './qr-code.html',
     './attendance.html',
     './payments.html',
     './profile.html',

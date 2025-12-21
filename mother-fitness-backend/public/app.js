@@ -102,8 +102,9 @@ class GymApp {
             this.render();
             this.setupAnalyticsListener(); // Fix analytics button
             this.setupIntelligenceListener(); // Add intelligence button
-            this.setupSocketListeners(); // Initialize ZKTeco socket listeners
-            this.initSocket();
+            this.setupDeviceSettingsListener(); // Add device settings button
+            this.initSocket(); // Initialize socket first with correct URL
+            this.setupSocketListeners(); // Then setup listeners
         } catch (error) {
             console.error('Failed to initialize app:', error);
             this.showNotification('error', 'Error', `Failed to load application: ${error.message}`);
@@ -116,7 +117,13 @@ class GymApp {
         const token = this.api.token;
         if (!token) return;
 
-        this.socket = io({
+        if (typeof io === 'undefined') {
+            console.error('Socket.io (io) is not defined. Features requiring real-time updates will not work.');
+            this.showNotification('warning', 'Connection Warning', 'Real-time updates may be unavailable.');
+            return;
+        }
+
+        this.socket = io(this.api.baseURL, {
             query: { token }
         });
 
@@ -153,6 +160,23 @@ class GymApp {
                     e.preventDefault();
                     e.stopPropagation();
                     this.toggleIntelligenceView();
+                    this.closeHamburgerMenu();
+                });
+            }
+        }, 1500);
+    }
+
+    setupDeviceSettingsListener() {
+        setTimeout(() => {
+            const btn = document.getElementById('menu-device-settings-btn');
+            if (btn) {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+
+                newBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.toggleDeviceSettings();
                     this.closeHamburgerMenu();
                 });
             }
@@ -398,7 +422,8 @@ class GymApp {
 
     setupSocketListeners() {
         if (!this.socket) {
-            this.socket = io();
+            console.warn('Socket not initialized. Waiting for initSocket...');
+            return;
         }
 
         // ZKTeco attendance events
@@ -1763,11 +1788,18 @@ class GymApp {
             });
         }
 
-        const scanQrBtn = document.getElementById('menu-scan-qr-btn');
-        if (scanQrBtn) {
-            scanQrBtn.addEventListener('click', () => {
-                this.initAudio(); // Initialize audio context on user interaction
-                this.openScannerModal();
+        const intelligenceBtn = document.getElementById('menu-intelligence-btn');
+        if (intelligenceBtn) {
+            intelligenceBtn.addEventListener('click', () => {
+                this.toggleIntelligenceView();
+                this.closeHamburgerMenu();
+            });
+        }
+
+        const deviceSettingsBtn = document.getElementById('menu-device-settings-btn');
+        if (deviceSettingsBtn) {
+            deviceSettingsBtn.addEventListener('click', () => {
+                this.toggleDeviceSettings();
                 this.closeHamburgerMenu();
             });
         }
@@ -2724,9 +2756,6 @@ class GymApp {
 
         return `
             <div class="customer-card ${statusClass}">
-                <button class="customer-qr-btn" onclick="app.openQRModal('${customer.id}')" title="View QR Code">
-                    📱
-                </button>
                 <div class="customer-header">
                     <div>
                         ${photoHtml}
@@ -2798,178 +2827,6 @@ class GymApp {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
-    }
-
-    // ===================================
-    // QR Code & Attendance System
-    // ===================================
-
-    // Generate QR Code for Customer
-    generateQRCode(customerId) {
-        const qrData = JSON.stringify({
-            type: 'ULTRA_FITNESS_MEMBER',
-            customerId: customerId,
-            version: '1.0'
-        });
-        return qrData;
-    }
-
-    // Open QR Code Modal
-    openQRModal(customerId) {
-        const customer = this.customers.find(c => c.id === customerId);
-        if (!customer) return;
-
-        const modal = document.getElementById('qr-modal');
-        document.getElementById('qr-customer-name').textContent = customer.name;
-        document.getElementById('qr-customer-plan').textContent = `${customer.plan} Plan`;
-
-        // Clear previous QR code
-        const container = document.getElementById('qr-code-container');
-        container.innerHTML = '';
-
-        // Generate QR code
-        const qrData = this.generateQRCode(customerId);
-        new QRCode(container, {
-            text: qrData,
-            width: 256,
-            height: 256,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-
-        modal.classList.add('show');
-
-        // Setup download button
-        document.getElementById('download-qr-btn').onclick = () => {
-            this.downloadQRCode(customer.name);
-        };
-    }
-
-    closeQRModal() {
-        document.getElementById('qr-modal').classList.remove('show');
-    }
-
-    downloadQRCode(customerName) {
-        const canvas = document.querySelector('#qr-code-container canvas');
-        if (canvas) {
-            const link = document.createElement('a');
-            link.download = `${customerName.replace(/\s+/g, '_')} _QR_Code.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-            this.showNotification('success', 'QR Code Downloaded', `QR code for ${customerName} has been downloaded`);
-        }
-    }
-
-    // QR Scanner
-    openScannerModal() {
-        const modal = document.getElementById('scanner-modal');
-        modal.classList.add('show');
-
-        const html5QrCode = new Html5Qrcode("qr-reader");
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 250 }
-            },
-            (decodedText) => {
-                // Successfully scanned - KEEP SCANNER RUNNING
-                if (!this.scannerProcessing) {
-                    this.scannerProcessing = true;
-
-                    // Process the QR code without stopping the scanner
-                    this.processScannedQR(decodedText);
-
-                    // Reset processing flag after 2 seconds to prevent duplicate scans
-                    setTimeout(() => {
-                        this.scannerProcessing = false;
-                    }, 2000);
-                }
-                // Scanner continues running for next scan...
-            },
-            (errorMessage) => {
-                // Scanning error (ignore, happens continuously)
-            }
-        ).catch(err => {
-            console.error('Scanner error:', err);
-            this.showNotification('error', 'Scanner Error', 'Could not access camera');
-            this.closeScannerModal();
-        });
-
-        // Store scanner instance for cleanup
-        this.qrScanner = html5QrCode;
-        this.scannerProcessing = false;
-    }
-
-    closeScannerModal() {
-        const modal = document.getElementById('scanner-modal');
-
-        if (this.qrScanner && !this.scannerProcessing) {
-            this.qrScanner.stop().then(() => {
-                this.qrScanner.clear();
-                this.qrScanner = null;
-            }).catch(err => {
-                console.error('Error closing scanner:', err);
-                this.qrScanner = null;
-            });
-        }
-
-        modal.classList.remove('show');
-    }
-
-    async processScannedQR(qrData) {
-        try {
-            const data = JSON.parse(qrData);
-
-            if (data.type !== 'ULTRA_FITNESS_MEMBER') {
-                this.showNotification('error', 'Invalid QR Code', 'This is not a valid member QR code');
-                return;
-            }
-
-            let customer = this.customers.find(c => c.id === data.customerId);
-
-            // Fallback: If not found locally, try to fetch from API (stale data handling)
-            if (!customer) {
-                try {
-                    this.showNotification('info', 'Searching...', 'Verifying member in database...');
-                    const response = await this.api.getCustomer(data.customerId);
-                    if (response && response.data && response.data.customer) {
-                        const c = response.data.customer;
-                        // Instantiate new Customer object
-                        customer = new Customer(
-                            c._id,
-                            c.name,
-                            c.age,
-                            c.email,
-                            c.phone,
-                            c.plan,
-                            c.validity.split('T')[0],
-                            c.notes,
-                            c.photo || '',
-                            new Date(c.createdAt)
-                        );
-                        // Add to local cache
-                        this.customers.push(customer);
-                    }
-                } catch (err) {
-                    console.error('Member lookup failed:', err);
-                }
-            }
-
-            if (!customer) {
-                this.showNotification('error', 'Member Not Found', 'This member does not exist in the system');
-                return;
-            }
-
-            // Mark attendance
-            this.markAttendance(customer);
-
-        } catch (error) {
-            console.error('QR processing error:', error);
-            this.showNotification('error', 'Invalid QR Code', 'Could not read QR code data');
-        }
     }
 
     // Attendance Management
@@ -3548,13 +3405,7 @@ function closePasswordModal() {
     app.closePasswordModal();
 }
 
-function closeQRModal() {
-    app.closeQRModal();
-}
 
-function closeScannerModal() {
-    app.closeScannerModal();
-}
 
 function closeHamburgerMenu() {
     app.closeHamburgerMenu();

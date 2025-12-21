@@ -200,7 +200,7 @@
                     <div id="attendance-empty-state" class="empty-state">
                         <div class="empty-icon">📋</div>
                         <h2>No Check-ins Yet</h2>
-                        <p>Scan QR codes to mark attendance</p>
+                        <p>Use biometrics or manual entry to mark attendance</p>
                     </div>
                 </div>
             </section>
@@ -637,6 +637,11 @@
                     <span class="menu-text">Gym Intelligence</span>
                 </div>
 
+                <div class="menu-item" id="menu-device-settings-btn">
+                    <span class="menu-icon">⚙️</span>
+                    <span class="menu-text">Device Settings & Management</span>
+                </div>
+
                 <div class="menu-divider"></div>
 
                 <div class="menu-item" id="menu-announcements-btn">
@@ -901,7 +906,21 @@
         </div>
     </div>
     <!-- External Scripts -->
-    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        (function () {
+            var script = document.createElement('script');
+            // Use absolute URL to local backend by default
+            var localUrl = "http://localhost:5000/socket.io/socket.io.js";
+            script.src = localUrl;
+            script.onerror = function () {
+                console.warn('Local socket.io script failed to load from ' + localUrl + ', trying fallback CDN...');
+                var fallback = document.createElement('script');
+                fallback.src = "https://cdn.socket.io/4.8.1/socket.io.min.js";
+                document.head.appendChild(fallback);
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
