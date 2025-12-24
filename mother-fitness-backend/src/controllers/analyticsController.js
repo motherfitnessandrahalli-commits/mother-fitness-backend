@@ -209,9 +209,100 @@ const getBusinessGrowth = asyncHandler(async (req, res, next) => {
     });
 });
 
+/**
+ * @desc    Get profit metrics (daily, weekly, monthly, yearly)
+ * @route   GET /api/analytics/profits
+ * @access  Private
+ */
+const getProfitMetrics = asyncHandler(async (req, res, next) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Daily: Today
+    const dailyStart = new Date(today);
+    const dailyEnd = new Date(today);
+    dailyEnd.setHours(23, 59, 59, 999);
+
+    const dailyProfit = await Payment.aggregate([
+        {
+            $match: {
+                paymentDate: { $gte: dailyStart, $lte: dailyEnd }
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                total: { $sum: '$amount' }
+            }
+        }
+    ]);
+
+    // Weekly: Last 7 days
+    const weeklyStart = new Date(today);
+    weeklyStart.setDate(weeklyStart.getDate() - 6); // Today + last 6 days = 7 days total
+
+    const weeklyProfit = await Payment.aggregate([
+        {
+            $match: {
+                paymentDate: { $gte: weeklyStart, $lte: dailyEnd }
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                total: { $sum: '$amount' }
+            }
+        }
+    ]);
+
+    // Monthly: Current month
+    const monthlyStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthlyEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const monthlyProfit = await Payment.aggregate([
+        {
+            $match: {
+                paymentDate: { $gte: monthlyStart, $lte: monthlyEnd }
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                total: { $sum: '$amount' }
+            }
+        }
+    ]);
+
+    // Yearly: Current year
+    const yearlyStart = new Date(today.getFullYear(), 0, 1);
+    const yearlyEnd = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+    const yearlyProfit = await Payment.aggregate([
+        {
+            $match: {
+                paymentDate: { $gte: yearlyStart, $lte: yearlyEnd }
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                total: { $sum: '$amount' }
+            }
+        }
+    ]);
+
+    sendSuccess(res, 200, {
+        daily: dailyProfit.length > 0 ? dailyProfit[0].total : 0,
+        weekly: weeklyProfit.length > 0 ? weeklyProfit[0].total : 0,
+        monthly: monthlyProfit.length > 0 ? monthlyProfit[0].total : 0,
+        yearly: yearlyProfit.length > 0 ? yearlyProfit[0].total : 0
+    });
+});
+
 module.exports = {
     getDashboardStats,
     getPlanPopularity,
     getAgeDemographics,
-    getBusinessGrowth
+    getBusinessGrowth,
+    getProfitMetrics
 };

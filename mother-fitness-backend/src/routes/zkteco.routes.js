@@ -9,7 +9,8 @@ const {
     getEnrolledUsers,
     getAttendanceLogs,
     processAttendance,
-    clearAttendanceLogs
+    clearAttendanceLogs,
+    getOccupancy
 } = require('../controllers/zktecoController');
 const { protect } = require('../middleware/auth');
 
@@ -33,5 +34,7 @@ router.get('/enrolled-users', getEnrolledUsers);
 router.get('/attendance-logs', getAttendanceLogs);
 router.post('/process-attendance', processAttendance);
 router.post('/clear-logs', clearAttendanceLogs);
+router.get('/occupancy', getOccupancy);
+router.post('/sync', syncAllMembers);
 
 module.exports = router;

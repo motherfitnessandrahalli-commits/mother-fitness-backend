@@ -32,11 +32,10 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
     tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
 
     // Find customers with active plan but no attendance in 10 days
-    // This requires aggregation
     const churnRiskMembers = await Customer.aggregate([
         {
             $match: {
-                validity: { $gte: today } // Active plan
+                validity: { $gte: today } // Active plan only
             }
         },
         {
@@ -49,14 +48,16 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
         },
         {
             $addFields: {
-                lastVisit: { $max: '$visits.createdAt' }
+                // Use timestamp instead of createdAt
+                lastVisit: { $max: '$visits.timestamp' }
             }
         },
         {
             $match: {
                 $or: [
                     { lastVisit: { $lt: tenDaysAgo } },
-                    { lastVisit: { $exists: false } } // Never visited but has plan
+                    { lastVisit: { $exists: false } }, // Never visited but has plan
+                    { lastVisit: null } // No visits array
                 ]
             }
         },
@@ -65,29 +66,71 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
                 name: 1,
                 phone: 1,
                 lastVisit: 1,
-                plan: 1
+                plan: 1,
+                memberId: 1
             }
         },
         { $limit: 20 }
     ]);
 
-    // 3. Revenue Leakage (Recent Denied Entries)
-    const recentDenied = await TimelineEvent.countDocuments({
-        type: 'DENIED',
-        timestamp: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days
-    });
-
-    // 4. Gym Health Score (Simple % of active members actually using the gym)
-    // Find members who visited in last 7 days
+    // 3. Revenue Leakage (Expired members still visiting)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const activeVisitorsCount = await Attendance.distinct('customerId', {
-        createdAt: { $gte: sevenDaysAgo }
+    // Find expired members who have recent visits
+    const revenueLeakageMembers = await Customer.aggregate([
+        {
+            $match: {
+                validity: { $lt: today } // Expired members
+            }
+        },
+        {
+            $lookup: {
+                from: 'attendances',
+                localField: '_id',
+                foreignField: 'customerId',
+                as: 'recentVisits',
+                pipeline: [
+                    {
+                        $match: {
+                            timestamp: { $gte: sevenDaysAgo }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $match: {
+                'recentVisits.0': { $exists: true } // Has at least one recent visit
+            }
+        },
+        {
+            $project: {
+                name: 1,
+                phone: 1,
+                memberId: 1,
+                validity: 1,
+                visitCount: { $size: '$recentVisits' }
+            }
+        },
+        { $limit: 20 }
+    ]);
+
+    // 4. Gym Health Score (% of active members actually using the gym)
+    // Find members who visited in last 7 days
+    const activeVisitorsIds = await Attendance.distinct('customerId', {
+        timestamp: { $gte: sevenDaysAgo }
     });
 
+    // Count how many of these visitors are ACTIVE members
+    const activeVisitorsCount = await Customer.countDocuments({
+        _id: { $in: activeVisitorsIds },
+        validity: { $gte: today } // Only count active members
+    });
+
+    // Calculate utilization rate: active visitors / total active members
     const utilizationRate = activeCustomersCount > 0
-        ? Math.round((activeVisitorsCount.length / activeCustomersCount) * 100)
+        ? Math.min(Math.round((activeVisitorsCount / activeCustomersCount) * 100), 100)
         : 0;
 
     let healthStatus = 'GOOD';
@@ -99,12 +142,14 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
             score: utilizationRate,
             status: healthStatus,
             activeMembers: activeCustomersCount,
-            totalMembers: totalCustomers
+            totalMembers: totalCustomers,
+            activeVisitors: activeVisitorsCount
         },
         risks: {
             churnCount: churnRiskMembers.length,
             churnMembers: churnRiskMembers,
-            leakageCount: recentDenied
+            leakageCount: revenueLeakageMembers.length,
+            leakageMembers: revenueLeakageMembers
         }
     });
 });

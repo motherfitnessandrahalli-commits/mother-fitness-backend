@@ -3,7 +3,8 @@ const {
     getDashboardStats,
     getPlanPopularity,
     getAgeDemographics,
-    getBusinessGrowth
+    getBusinessGrowth,
+    getProfitMetrics
 } = require('../controllers/analyticsController');
 const { protect } = require('../middleware/auth');
 
@@ -16,5 +17,6 @@ router.get('/dashboard', getDashboardStats);
 router.get('/plans', getPlanPopularity);
 router.get('/demographics', getAgeDemographics);
 router.get('/growth', getBusinessGrowth);
+router.get('/profits', getProfitMetrics);
 
 module.exports = router;

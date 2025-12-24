@@ -337,6 +337,7 @@ class GymApp {
                     this.updateOccupancy();
                 }
                 if (viewId === 'attendance-dashboard') this.renderAttendance();
+                if (viewId === 'analytics-dashboard') this.loadProfitMetrics();
             }
         }
     }
@@ -605,6 +606,35 @@ class GymApp {
         } catch (error) {
             console.error('Failed to load intelligence data:', error);
             this.showNotification('error', 'Intelligence Error', 'Could not load gym health metrics.');
+        }
+    }
+
+    async loadProfitMetrics() {
+        try {
+            const response = await this.api.request('/api/analytics/profits');
+            const profits = response.data || response;
+
+            // Update profit displays
+            const dailyEl = document.getElementById('daily-profit');
+            const weeklyEl = document.getElementById('weekly-profit');
+            const monthlyEl = document.getElementById('monthly-profit');
+            const yearlyEl = document.getElementById('yearly-profit');
+
+            if (dailyEl && profits.daily !== undefined) {
+                dailyEl.textContent = `₹${profits.daily.toLocaleString('en-IN')}`;
+            }
+            if (weeklyEl && profits.weekly !== undefined) {
+                weeklyEl.textContent = `₹${profits.weekly.toLocaleString('en-IN')}`;
+            }
+            if (monthlyEl && profits.monthly !== undefined) {
+                monthlyEl.textContent = `₹${profits.monthly.toLocaleString('en-IN')}`;
+            }
+            if (yearlyEl && profits.yearly !== undefined) {
+                yearlyEl.textContent = `₹${profits.yearly.toLocaleString('en-IN')}`;
+            }
+        } catch (error) {
+            console.error('Failed to load profit metrics:', error);
+            this.showNotification('error', 'Analytics Error', 'Could not load revenue data.');
         }
     }
 
@@ -989,10 +1019,30 @@ class GymApp {
             // Update global connection flag (for UI compatibility)
             this.deviceConnected = Array.isArray(devices) && devices.some(d => d && d.isConnected);
             this.updateConnectionBanner();
+
+            // Enable/disable enrollment buttons based on connection status
+            const syncAllBtn = document.getElementById('sync-all-members-btn');
+            const refreshBtn = document.getElementById('refresh-enrolled-btn');
+
+            if (this.deviceConnected) {
+                // At least one device connected - enable buttons
+                if (syncAllBtn) syncAllBtn.disabled = false;
+                if (refreshBtn) refreshBtn.disabled = false;
+            } else {
+                // No devices connected - disable buttons
+                if (syncAllBtn) syncAllBtn.disabled = true;
+                if (refreshBtn) refreshBtn.disabled = true;
+            }
         } catch (error) {
             console.error('Failed to load device status:', error);
             this.connectedDevices = [];
             this.renderConnectedDevices();
+
+            // Disable buttons on error
+            const syncAllBtn = document.getElementById('sync-all-members-btn');
+            const refreshBtn = document.getElementById('refresh-enrolled-btn');
+            if (syncAllBtn) syncAllBtn.disabled = true;
+            if (refreshBtn) refreshBtn.disabled = true;
         }
     }
 
@@ -1207,6 +1257,11 @@ class GymApp {
             password: password,
             isFirstLogin: true
         };
+
+        // Add Initial Payment if provided
+        if (customerData.initialPayment) {
+            payload.initialPayment = customerData.initialPayment;
+        }
 
         try {
             this.setLoading(true);
@@ -2400,10 +2455,25 @@ class GymApp {
                     this.displayPhoto(customer.photo);
                 }
             }
+            // Hide Initial Payment Section in Edit Mode
+            const paymentSection = document.getElementById('initial-payment-section');
+            if (paymentSection) {
+                paymentSection.style.display = 'none';
+            }
         } else {
             // Add mode
             title.textContent = 'Add New Customer';
             submitBtn.innerHTML = '<span class="btn-icon">💾</span> Save Customer';
+
+            // Show Initial Payment Section
+            const paymentSection = document.getElementById('initial-payment-section');
+            if (paymentSection) {
+                paymentSection.style.display = 'block';
+                // Reset inputs
+                document.getElementById('initial-payment-amount').value = '';
+                document.getElementById('initial-payment-method').value = 'Cash';
+                document.getElementById('initial-payment-receipt').value = '';
+            }
 
             // Set default validity to 1 month from today
             const defaultDate = new Date();
@@ -2443,8 +2513,21 @@ class GymApp {
             plan: document.getElementById('customer-plan').value,
             validity: document.getElementById('customer-validity').value,
             notes: document.getElementById('customer-notes').value.trim(),
+            notes: document.getElementById('customer-notes').value.trim(),
             memberId: document.getElementById('customer-member-id').value.trim()
         };
+
+        // Capture Initial Payment Data (Only for new customers)
+        if (!this.editingCustomerId) {
+            const amount = document.getElementById('initial-payment-amount').value;
+            if (amount && parseFloat(amount) > 0) {
+                customerData.initialPayment = {
+                    amount: parseFloat(amount),
+                    paymentMethod: document.getElementById('initial-payment-method').value,
+                    receiptNumber: document.getElementById('initial-payment-receipt').value.trim()
+                };
+            }
+        }
 
         if (this.editingCustomerId) {
             this.updateCustomer(this.editingCustomerId, customerData);
@@ -3490,6 +3573,198 @@ class GymApp {
         } catch (error) {
             console.error('Failed to delete:', error);
             this.showNotification('error', 'Error', 'Failed to delete announcement');
+        }
+    }
+
+    // ==========================================
+    // Admin Profile Card Feature
+    // ==========================================
+
+    toggleAdminCard() {
+        const modal = document.getElementById('admin-profile-modal');
+        const viewMode = document.getElementById('admin-view-mode');
+        const editMode = document.getElementById('admin-edit-mode');
+
+        if (modal.style.display === 'flex') {
+            modal.style.display = 'none';
+            // Reset to view mode on close
+            viewMode.style.display = 'block';
+            editMode.style.display = 'none';
+        } else {
+            modal.style.display = 'flex';
+            this.loadAdminProfile();
+        }
+    }
+
+    async loadAdminProfile() {
+        try {
+            const result = await this.api.request('/api/admin-profile');
+            const profile = result.data || result;
+            this.currentAdminProfile = profile; // Store for edit
+
+            // Populate View Mode
+            document.getElementById('admin-name-display').textContent = profile.name || 'Mahesh P';
+            document.getElementById('admin-dob-display').textContent = profile.dateOfBirth || 'October 1990';
+            document.getElementById('admin-since-display').textContent = profile.gymStartedYear || '2017';
+
+            const photoEl = document.getElementById('admin-photo-display');
+            if (profile.photo) {
+                photoEl.src = profile.photo;
+            } else {
+                photoEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'Admin')}&background=6c5ce7&color=fff&size=200`;
+            }
+
+            // Populate Member IDs list
+            const idsList = document.getElementById('admin-ids-list');
+            idsList.innerHTML = '';
+
+            const ids = profile.memberIds || [];
+            // Ensure 4 slots are shown
+            for (let i = 0; i < 4; i++) {
+                const idDiv = document.createElement('div');
+                if (ids[i]) {
+                    idDiv.className = 'id-tag';
+                    idDiv.textContent = ids[i];
+                } else {
+                    idDiv.className = 'id-tag empty';
+                    idDiv.textContent = 'Empty Slot';
+                }
+                idsList.appendChild(idDiv);
+            }
+
+        } catch (error) {
+            console.error('Failed to load admin profile:', error);
+            this.showNotification('error', 'Error', 'Could not load admin profile');
+        }
+    }
+
+    promptAdminEdit() {
+        // Show password prompt modal
+        document.getElementById('admin-password-modal').style.display = 'flex';
+        document.getElementById('admin-verify-password').value = '';
+        document.getElementById('admin-verify-password').focus();
+    }
+
+    async verifyAdminPassword() {
+        const password = document.getElementById('admin-verify-password').value;
+        if (!password) {
+            this.showNotification('warning', 'Required', 'Please enter password');
+            return;
+        }
+
+        try {
+            await this.api.request('/api/admin-profile/verify', {
+                method: 'POST',
+                data: { password }
+            });
+
+            // Password verified
+            document.getElementById('admin-password-modal').style.display = 'none';
+            this.enableAdminEditMode(password); // Pass password to keep for save
+        } catch (error) {
+            console.error('Password verification failed:', error);
+            this.showNotification('error', 'Access Denied', 'Incorrect password');
+        }
+    }
+
+    enableAdminEditMode(password) {
+        this.adminEditAuth = password; // Store temporarily for save request
+
+        document.getElementById('admin-view-mode').style.display = 'none';
+        document.getElementById('admin-edit-mode').style.display = 'block';
+
+        const profile = this.currentAdminProfile || {};
+
+        // Populate inputs
+        document.getElementById('edit-admin-name').value = profile.name || '';
+        document.getElementById('edit-admin-photo').value = profile.photo || '';
+        document.getElementById('edit-admin-dob').value = profile.dateOfBirth || '';
+        document.getElementById('edit-admin-year').value = profile.gymStartedYear || '';
+
+        // Populate member IDs inputs
+        this.renderAdminMemberIdInputs(profile.memberIds || []);
+    }
+
+    renderAdminMemberIdInputs(ids) {
+        const container = document.getElementById('edit-member-ids-container');
+        container.innerHTML = '';
+
+        ids.forEach((id, index) => {
+            const group = document.createElement('div');
+            group.className = 'admin-input-group';
+            group.innerHTML = `
+                <input type="text" class="form-input member-id-input" value="${id}" placeholder="Member ID">
+                <button type="button" class="btn btn-sm btn-danger" onclick="app.removeAdminMemberId(${index})">✕</button>
+            `;
+            container.appendChild(group);
+        });
+
+        // Limit to 4
+        const addBtn = document.querySelector('#admin-edit-form button[onclick="app.addAdminMemberIdInput()"]');
+        if (ids.length >= 4) {
+            addBtn.style.display = 'none';
+        } else {
+            addBtn.style.display = 'inline-block';
+        }
+    }
+
+    addAdminMemberIdInput() {
+        const inputs = Array.from(document.querySelectorAll('.member-id-input')).map(input => input.value);
+        if (inputs.length < 4) {
+            inputs.push('');
+            this.renderAdminMemberIdInputs(inputs);
+        }
+    }
+
+    removeAdminMemberId(index) {
+        const inputs = Array.from(document.querySelectorAll('.member-id-input')).map(input => input.value);
+        inputs.splice(index, 1);
+        this.renderAdminMemberIdInputs(inputs);
+    }
+
+    cancelAdminEdit() {
+        document.getElementById('admin-edit-mode').style.display = 'none';
+        document.getElementById('admin-view-mode').style.display = 'block';
+        this.adminEditAuth = null;
+    }
+
+    async saveAdminProfile(event) {
+        event.preventDefault();
+
+        if (!this.adminEditAuth) {
+            this.showNotification('error', 'Session Expired', 'Please verify password again');
+            this.cancelAdminEdit();
+            return;
+        }
+
+        const memberIds = Array.from(document.querySelectorAll('.member-id-input'))
+            .map(input => input.value.trim())
+            .filter(id => id !== '');
+
+        const payload = {
+            name: document.getElementById('edit-admin-name').value,
+            photo: document.getElementById('edit-admin-photo').value,
+            dateOfBirth: document.getElementById('edit-admin-dob').value,
+            gymStartedYear: parseInt(document.getElementById('edit-admin-year').value),
+            memberIds: memberIds,
+            password: this.adminEditAuth // Required by backend
+        };
+
+        try {
+            const result = await this.api.request('/api/admin-profile', {
+                method: 'PUT',
+                data: payload
+            });
+            const updatedProfile = result.data || result;
+
+            this.showNotification('success', 'Success', 'Admin profile updated');
+            this.currentAdminProfile = updatedProfile;
+            this.cancelAdminEdit(); // Go back to view
+            this.loadAdminProfile(); // Refresh view
+
+        } catch (error) {
+            console.error('Failed to save profile:', error);
+            this.showNotification('error', 'Error', error.response?.data?.message || 'Could not update profile');
         }
     }
 }

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biometric System - Complete Postman Testing Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #fff;
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+
+        h2 {
+            color: #2980b9;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            font-size: 24px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+
+        h3 {
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        h4 {
+            color: #555;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        p {
+            margin-bottom: 12px;
+        }
+
+        pre {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+        }
+
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        ul,
+        ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .test-box {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            page-break-inside: avoid;
+        }
+
+        .test-box.success {
+            border-left: 6px solid #27ae60;
+            background: #f0fdf4;
+        }
+
+        .test-box.denied {
+            border-left: 6px solid #e74c3c;
+            background: #fef2f2;
+        }
+
+        .test-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .test-description {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .checklist {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .checklist li {
+            list-style-type: none;
+        }
+
+        .checklist li:before {
+            content: "☐ ";
+            font-size: 18px;
+            margin-right: 8px;
+        }
+
+        hr {
+            border: none;
+            border-top: 2px solid #ddd;
+            margin: 30px 0;
+        }
+
+        @media print {
+            body {
+                padding: 20px;
+            }
+
+            .test-box {
+                page-break-inside: avoid;
+            }
+
+            h2 {
+                page-break-after: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔐 Biometric System - Complete Postman Testing Guide</h1>
+
+    <p>This guide ensures your biometric access system works perfectly before going live. Test ALL scenarios to avoid
+        costly errors.</p>
+
+    <hr>
+
+    <h2>📋 Setup in Postman</h2>
+
+    <h3>Base Configuration</h3>
+    <ul>
+        <li><strong>URL:</strong> <code>http://localhost:5000/api/biometric/mock</code></li>
+        <li><strong>Method:</strong> <code>POST</code></li>
+        <li><strong>Headers:</strong>
+            <ul>
+                <li><code>Content-Type</code>: <code>application/json</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <hr>
+
+    <h2>📥 Test Scenarios (IN Direction)</h2>
+
+    <div class="test-box success">
+        <div class="test-title">✅ Test 1: Active Member Entry (Success)</div>
+        <div class="test-description">Active member scans to enter</div>
+
+        <h4>Request Body:</h4>
+        <pre>{
+  "device_id": "H5L_GATE_01",
+  "user_id": "U010",
+  "verify_type": "FACE",
+  "timestamp": "2025-12-21 17:00:00",
+  "direction": "IN"
+}</pre>
+
+        <h4>Expected Response:</h4>
+        <pre>{
+  "success": true,
+  "member_id": "U010",
+  "direction": "IN",
+  "decision": "ALLOW",
+  "message": "Membership Active",
+  "customer": { /* full customer object */ }
+}</pre>
+
+        <h4>Expected Database Changes:</h4>
+        <ul>
+            <li><code>isInside</code> = <code>true</code></li>
+            <li><code>totalVisits</code> += 1</li>
+            <li>New attendance record created with <code>type: "IN"</code></li>
+        </ul>
+    </div>
+
+    <div class="test-box denied">
+        <div class="test-title">❌ Test 2: Expired Member Entry (Denied)</div>
+        <div class="test-description">Member with expired plan tries to enter</div>
+
+        <h4>Request Body:</h4>
+        <pre>{
+  "device_id": "H5L_GATE_01",
+  "user_id": "U038",
+  "verify_type": "FACE",
+  "timestamp": "2025-12-21 17:00:00",
+  "direction": "IN"
+}</pre>
+
+        <div class="note">
+            <strong>Note:</strong> Use a member ID whose validity date is in the past
+        </div>
+
+        <h4>Expected Response:</h4>
+        <pre>{
+  "success": false,
+  "member_id": "U038",
+  "direction": "IN",
+  "decision": "DENY",
+  "message": "Membership Expired",
+  "customer": { /* customer object */ }
+}</pre>
+
+        <h4>Expected Database Changes:</h4>
+        <ul>
+            <li>No changes (entry denied)</li>
+        </ul>
+    </div>
+
+    <div class="test-box denied">
+        <div class="test-title">❌ Test 3: Anti-Passback (Already Inside)</div>
+        <div class="test-description">Member who is already inside tries to scan IN again</div>
+
+        <div class="warning">
+            <strong>Setup:</strong>
+            <ol>
+                <li>First, run Test 1 to mark U010 as inside</li>
+                <li>Then run this test</li>
+            </ol>
+        </div>
+
+        <h4>Request Body:</h4>
+        <pre>{
+  "device_id": "H5L_GATE_01",
+  "user_id": "U010",
+  "verify_type": "FACE",
+  "timestamp": "2025-12-21 17:05:00",
+  "direction": "IN"
+}</pre>
+
+        <h4>Expected Response:</h4>
+        <pre>{
+  "success": false,
+  "member_id": "U010",
+  "direction": "IN",
+  "decision": "DENY",
+  "message": "Anti-Passback Breach",
+  "customer": { /* customer object */ }
+}</pre>
+
+        <h4>Expected Database Changes:</h4>
+        <ul>
+            <li>No changes (entry denied)</li>
+        </ul>
+    </div>
+
+    <div class="test-box denied">
+        <div class="test-title">❌ Test 4: Unknown Member</div>
+        <div class="test-description">Someone with an unregistered ID tries to enter</div>
+
+        <h4>Request Body:</h4>
+        <pre>{
+  "device_id": "H5L_GATE_01",
+  "user_id": "U999",
+  "verify_type": "FACE",
+  "timestamp": "2025-12-21 17:00:00",
+  "direction": "IN"
+}</pre>
+
+        <h4>Expected Response:</h4>
+        <pre>{
+  "success": false,
+  "member_id": "U999",
+  "direction": "IN",
+  "decision": "DENY",
+  "message": "Unknown Member"
+}</pre>
+
+        <h4>Expected Database Changes:</h4>
+        <ul>
+            <li>No changes</li>
+        </ul>
+    </div>
+
+    <hr>
+
+    <h2>📤 Test Scenarios (OUT Direction)</h2>
+
+    <div class="test-box success">
+        <div class="test-title">✅ Test 5: Member Exit (Always Success)</div>
+        <div class="test-description">Member who is inside scans to exit</div>
+
+        <div class="note">
+            <strong>Setup:</strong> Ensure U010 is marked as <code>isInside: true</code> (run Test 1 first)
+        </div>
+
+        <h4>Request Body:</h4>
+        <pre>{
+  "device_id": "H5L_GATE_02",
+  "user_id": "U010",
+  "verify_type": "FACE",
+  "timestamp": "2025-12-21 18:00:00",
+  "direction": "OUT"
+}</pre>
+
+        <h4>Expected Response:</h4>
+        <pre>{
+  "success": true,
+  "member_id": "U010",
+  "direction": "OUT",
+  "decision": "ALLOW",
+  "message": "Goodbye! Have a nice day.",
+  "customer": { /* customer object */ }
+}</pre>
+
+        <h4>Expected Database Changes:</h4>
+        <ul>
+            <li><code>isInside</code> = <code>false</code></li>
+            <li>New attendance record with <code>type: "OUT"</code></li>
+        </ul>
+    </div>
+
+    <div class="test-box success">
+        <div class="test-title">✅ Test 6: Exit Without Entry (Edge Case)</div>
+        <div class="test-description">Member who is NOT inside scans OUT (should still allow for safety)</div>
+
+        <div class="note">
+            <strong>Setup:</strong> Ensure U010 has <code>isInside: false</code>
+        </div>
+
+        <h4>Request Body:</h4>
+        <pre>{
+  "device_id": "H5L_GATE_02",
+  "user_id": "U010",
+  "verify_type": "FACE",
+  "timestamp": "2025-12-21 18:00:00",
+  "direction": "OUT"
+}</pre>
+
+        <h4>Expected Response:</h4>
+        <pre>{
+  "success": true,
+  "member_id": "U010",
+  "direction": "OUT",
+  "decision": "ALLOW",
+  "message": "Goodbye! Have a nice day."
+}</pre>
+
+        <div class="note">
+            <strong>Why This Allows:</strong> Safety - never trap someone inside even if database is wrong
+        </div>
+    </div>
+
+    <div class="test-box success">
+        <div class="test-title">✅ Test 7: Expired Member Exit (Still Allows)</div>
+        <div class="test-description">Even expired members can exit</div>
+
+        <h4>Request Body:</h4>
+        <pre>{
+  "device_id": "H5L_GATE_02",
+  "user_id": "U038",
+  "verify_type": "FACE",
+  "timestamp": "2025-12-21 18:00:00",
+  "direction": "OUT"
+}</pre>
+
+        <h4>Expected Response:</h4>
+        <pre>{
+  "success": true,
+  "decision": "ALLOW"
+}</pre>
+    </div>
+
+    <hr>
+
+    <h2>✅ Verification Checklist</h2>
+
+    <div class="checklist">
+        <p><strong>After running all tests, verify:</strong></p>
+        <ul>
+            <li>Dashboard "Live Count" updates correctly</li>
+            <li>Green card shows for allowed access</li>
+            <li>Red card shows for denied access</li>
+            <li>Socket events trigger in real-time (check browser console)</li>
+            <li>Attendance logs are created correctly</li>
+            <li>Anti-passback prevents re-entry</li>
+            <li>OUT direction never blocks anyone</li>
+        </ul>
+    </div>
+
+    <hr>
+
+    <h2>⚠️ Critical Edge Cases to Test</h2>
+
+    <ol>
+        <li><strong>Rapid Scans:</strong> Send 5 IN requests within 2 seconds for the same user</li>
+        <li><strong>Concurrent Users:</strong> Send IN requests for U010 and U020 at the same time</li>
+        <li><strong>Invalid JSON:</strong> Send malformed JSON to ensure error handling works</li>
+        <li><strong>Missing Fields:</strong> Send request without <code>user_id</code> or <code>direction</code></li>
+    </ol>
+
+    <hr>
+
+    <h2>📊 Quick Reference Table</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Test #</th>
+                <th>Direction</th>
+                <th>Member</th>
+                <th>Expected Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>IN</td>
+                <td>Active (U010)</td>
+                <td>✅ ALLOW</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>IN</td>
+                <td>Expired (U038)</td>
+                <td>❌ DENY</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>IN</td>
+                <td>Already Inside</td>
+                <td>❌ DENY (Anti-passback)</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>IN</td>
+                <td>Unknown (U999)</td>
+                <td>❌ DENY</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>OUT</td>
+                <td>Any Member</td>
+                <td>✅ ALWAYS ALLOW</td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td>OUT</td>
+                <td>Not Inside</td>
+                <td>✅ ALWAYS ALLOW</td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td>OUT</td>
+                <td>Expired</td>
+                <td>✅ ALWAYS ALLOW</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h2>🔍 How to Monitor Results</h2>
+
+    <h3>In Browser Console:</h3>
+    <pre>// Watch socket events
+socket.on('access:result', (data) => console.log('🔔', data));</pre>
+
+    <h3>In PM2 Logs:</h3>
+    <pre>pm2 logs mother-fitness-backend --lines 100</pre>
+
+    <p><strong>Look for:</strong></p>
+    <ul>
+        <li><code>🔍 [AccessControl] Processing request</code></li>
+        <li><code>✅ Entry Allowed</code> or <code>🚫 Entry Denied</code></li>
+        <li><code>🔔 [AccessControl] Emitting ALLOWED/DENIED</code></li>
+    </ul>
+
+    <hr>
+
+    <div class="warning" style="text-align: center; font-size: 18px; font-weight: bold; margin-top: 40px;">
+        ⚠️ IMPORTANT: Save this document and run ALL tests before connecting real hardware! ⚠️
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; color: #888; font-size: 14px;">
+        <p>Mother Fitness Gym Management System</p>
+        <p>© 2025 - Biometric Integration Testing Documentation</p>
+    </div>
+</body>
+
+</html>

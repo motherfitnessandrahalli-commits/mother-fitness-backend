@@ -87,6 +87,9 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.get('/api/test-ping', (req, res) => res.send('PONG - Server is running new code'));
+console.log('✅ Registering /api/admin-profile route...');
+app.use('/api/admin-profile', require('./routes/adminProfile.routes'));
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/customers', require('./routes/customer.routes'));
 app.use('/api/upload', require('./routes/upload.routes'));

@@ -1,4 +1,5 @@
 const zktecoService = require('../services/ZKTecoService');
+const accessControl = require('../services/AccessControlService');
 const { Customer, Attendance } = require('../models');
 const { asyncHandler, sendSuccess, AppError } = require('../utils/errorHandler');
 const { getLocalDateString, getLocalTimeString } = require('../utils/helpers');
@@ -12,19 +13,24 @@ const timeline = require('../services/TimelineService');
  * @access  Private (Admin)
  */
 const connectDevice = asyncHandler(async (req, res, next) => {
-    const { ip, port } = req.body;
+    const { ip, port, role } = req.body;
 
     if (!ip) {
         return next(new AppError('Device IP address is required', 400));
     }
 
-    const connected = await zktecoService.connect(ip, port);
+    try {
+        const connected = await zktecoService.connect(ip, port, role);
 
-    if (connected) {
-        const status = zktecoService.getStatus();
-        sendSuccess(res, 200, status, `Successfully connected to ZKTeco device at ${ip}`);
-    } else {
-        next(new AppError('Failed to connect to device. Check IP address and network connectivity.', 500));
+        if (connected) {
+            const status = zktecoService.getStatus();
+            sendSuccess(res, 200, status, `Successfully connected to ZKTeco [${role}] device at ${ip}`);
+        }
+    } catch (error) {
+        logger.error(`ZKTeco Connection Error: ${error.message}`);
+        // Use 504 for timeout, 400 for other connection issues
+        const statusCode = error.message.toLowerCase().includes('timeout') ? 504 : 400;
+        return next(new AppError(`Connection failed: ${error.message}`, statusCode));
     }
 });
 
@@ -34,10 +40,16 @@ const connectDevice = asyncHandler(async (req, res, next) => {
  * @access  Private (Admin)
  */
 const disconnectDevice = asyncHandler(async (req, res, next) => {
-    const disconnected = await zktecoService.disconnect();
+    const { ip } = req.body;
+
+    if (!ip) {
+        return next(new AppError('Device IP address is required', 400));
+    }
+
+    const disconnected = await zktecoService.disconnect(ip);
 
     if (disconnected) {
-        sendSuccess(res, 200, null, 'Successfully disconnected from ZKTeco device');
+        sendSuccess(res, 200, null, `Successfully disconnected from device at ${ip}`);
     } else {
         next(new AppError('Device was not connected', 400));
     }
@@ -50,13 +62,7 @@ const disconnectDevice = asyncHandler(async (req, res, next) => {
  */
 const getDeviceStatus = asyncHandler(async (req, res, next) => {
     const status = zktecoService.getStatus();
-
-    if (status.connected) {
-        const info = await zktecoService.getDeviceInfo();
-        sendSuccess(res, 200, { ...status, deviceInfo: info });
-    } else {
-        sendSuccess(res, 200, status);
-    }
+    sendSuccess(res, 200, status);
 });
 
 /**
@@ -77,19 +83,19 @@ const enrollMember = asyncHandler(async (req, res, next) => {
         return next(new AppError('Customer not found', 404));
     }
 
-    // Enroll to device using memberId
+    // Enroll to all devices using memberId
     const userId = customer.memberId || customer._id.toString();
-    await zktecoService.enrollUser(userId, customer.name);
+    const results = await zktecoService.enrollUser(userId, customer.name);
 
     // Log event
     await timeline.logEvent(
         customer._id,
         'ENROLLMENT',
         'Biometric Enrolled',
-        `Enrolled in ZKTeco device with ID: ${userId}`
+        `Enrolled in ZKTeco device(s) with ID: ${userId}`
     );
 
-    sendSuccess(res, 200, { userId }, `Successfully enrolled ${customer.name} to biometric device`);
+    sendSuccess(res, 200, { userId, results }, `Enrolled ${customer.name} to connected device(s)`);
 });
 
 /**
@@ -113,10 +119,10 @@ const removeMember = asyncHandler(async (req, res, next) => {
         customer._id,
         'UNENROLLMENT',
         'Biometric Removed',
-        `Removed from ZKTeco device`
+        `Removed from ZKTeco device(s)`
     );
 
-    sendSuccess(res, 200, null, `Successfully removed ${customer.name} from biometric device`);
+    sendSuccess(res, 200, null, `Successfully removed ${customer.name} from device(s)`);
 });
 
 /**
@@ -139,10 +145,26 @@ const syncAllMembers = asyncHandler(async (req, res, next) => {
         cardNumber: 0
     }));
 
-    // Bulk enroll
-    const results = await zktecoService.bulkEnrollUsers(users);
+    // Bulk enroll (Note: current service bulkEnroll only does first device or needs update)
+    const results = { success: 0, failed: 0 };
+    for (const user of users) {
+        const res = await zktecoService.enrollUser(user.userId, user.name);
+        if (res.every(r => r.success)) results.success++;
+        else results.failed++;
+    }
 
-    sendSuccess(res, 200, results, `Synced ${results.success} members to device`);
+    sendSuccess(res, 200, results, `Synced ${results.success} members to device(s)`);
+});
+
+/**
+ * @desc    Get occupancy info
+ * @route   GET /api/zkteco/occupancy
+ * @access  Private (Admin)
+ */
+const getOccupancy = asyncHandler(async (req, res, next) => {
+    const count = await accessControl.getLiveCount();
+    const members = await accessControl.getInsideMembers();
+    sendSuccess(res, 200, { count, members });
 });
 
 /**
@@ -151,94 +173,38 @@ const syncAllMembers = asyncHandler(async (req, res, next) => {
  * @access  Private (Admin)
  */
 const getEnrolledUsers = asyncHandler(async (req, res, next) => {
-    const users = await zktecoService.getEnrolledUsers();
+    const { ip } = req.query;
+    if (!ip) return next(new AppError('Device IP is required', 400));
+    const users = await zktecoService.getEnrolledUsers(ip);
     sendSuccess(res, 200, { users, count: users.length });
 });
 
 /**
- * @desc    Get attendance logs from device
+ * @desc    Get attendance logs from device (Legacy/Direct)
  * @route   GET /api/zkteco/attendance-logs
  * @access  Private (Admin)
  */
 const getAttendanceLogs = asyncHandler(async (req, res, next) => {
-    const logs = await zktecoService.getAttendanceLogs();
-    sendSuccess(res, 200, { logs, count: logs.length });
+    const { ip } = req.query;
+    if (!ip) return next(new AppError('Device IP is required', 400));
+    const deviceObj = zktecoService.ensureConnected(ip);
+    const logs = await deviceObj.instance.getAttendances();
+    sendSuccess(res, 200, { logs: logs.data, count: logs.data.length });
 });
 
 /**
- * @desc    Process attendance event from ZKTeco device
+ * @desc    Process manual check-in/out
  * @route   POST /api/zkteco/process-attendance
- * @access  Private (System - called internally)
+ * @access  Private (Admin/System)
  */
 const processAttendance = asyncHandler(async (req, res, next) => {
-    const { userId, timestamp } = req.body;
-
-    if (!userId) {
-        return next(new AppError('User ID is required', 400));
-    }
-
-    // Find customer by memberId or _id
-    const customer = await Customer.findOne({
-        $or: [
-            { memberId: userId },
-            { _id: userId }
-        ]
+    const { userId, type } = req.body;
+    await accessControl.processAccessRequest({
+        userId,
+        deviceRole: type || 'IN',
+        deviceIp: 'manual'
     });
-
-    if (!customer) {
-        logger.warn(`⚠️ Attendance event for unknown user: ${userId}`);
-        return next(new AppError('Member not found', 404));
-    }
-
-    const status = customer.status; // Uses virtual field
-    const todayStr = getLocalDateString();
-
-    // Check if already marked today
-    const alreadyMarked = await Attendance.findOne({
-        customerId: customer._id,
-        date: todayStr
-    });
-
-    if (!alreadyMarked) {
-        // Mark attendance
-        await Attendance.create({
-            customerId: customer._id,
-            customerName: customer.name,
-            date: todayStr,
-            time: getLocalTimeString(),
-            membershipStatus: status,
-            markedBy: null // System marked
-        });
-
-        customer.totalVisits += 1;
-        await customer.save();
-
-        // Log to timeline
-        await timeline.logEvent(
-            customer._id,
-            'CHECK_IN',
-            'Checked In',
-            `Entered gym via ZKTeco biometric. Status: ${status}`
-        );
-
-        logger.info(`✅ Attendance marked: ${customer.name} (${status})`);
-    }
-
-    // Emit real-time event
-    getIO().emit('zkteco:attendance', {
-        customer: {
-            id: customer._id,
-            name: customer.name,
-            photo: customer.photo,
-            plan: customer.plan,
-            validity: customer.validity,
-            status: status
-        },
-        timestamp: timestamp || new Date(),
-        alreadyMarked: !!alreadyMarked
-    });
-
-    sendSuccess(res, 200, { customer, status }, 'Attendance processed');
+    sendSuccess(res, 200, null, 'Attendance processed manually');
 });
 
 /**
@@ -247,8 +213,11 @@ const processAttendance = asyncHandler(async (req, res, next) => {
  * @access  Private (Admin)
  */
 const clearAttendanceLogs = asyncHandler(async (req, res, next) => {
-    await zktecoService.clearAttendanceLogs();
-    sendSuccess(res, 200, null, 'Successfully cleared attendance logs from device');
+    const { ip } = req.body;
+    if (!ip) return next(new AppError('Device IP is required', 400));
+    const deviceObj = zktecoService.ensureConnected(ip);
+    await deviceObj.instance.clearAttendanceLog();
+    sendSuccess(res, 200, null, `Successfully cleared attendance logs from ${ip}`);
 });
 
 module.exports = {
@@ -261,5 +230,6 @@ module.exports = {
     getEnrolledUsers,
     getAttendanceLogs,
     processAttendance,
-    clearAttendanceLogs
+    clearAttendanceLogs,
+    getOccupancy
 };

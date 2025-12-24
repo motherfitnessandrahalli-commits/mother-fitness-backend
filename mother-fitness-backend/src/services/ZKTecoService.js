@@ -1,305 +1,234 @@
 const ZKLib = require('zklib');
 const logger = require('../config/logger');
 const { getIO } = require('../config/socket');
+const accessControl = require('./AccessControlService');
 
 /**
  * ZKTeco Biometric Device Service
- * Manages connection, enrollment, and attendance from ZKTeco devices
+ * Manages multiple device connections for IN/OUT access control
  */
 class ZKTecoService {
     constructor() {
-        this.device = null;
-        this.isConnected = false;
+        this.devices = new Map(); // Store devices: { instance: ZKLib, config: { ip, port, role }, isConnected: boolean }
         this.config = {
-            ip: process.env.ZKTECO_IP || null,
-            port: parseInt(process.env.ZKTECO_PORT) || 4370,
             timeout: parseInt(process.env.ZKTECO_TIMEOUT) || 5000,
             inport: 5200
         };
-        this.attendanceListener = null;
     }
 
     /**
-     * Connect to ZKTeco device
+     * Connect to a ZKTeco device
      * @param {String} ip - Device IP address
      * @param {Number} port - Device port (default: 4370)
+     * @param {String} role - Device role ('IN' or 'OUT')
      * @returns {Promise<Boolean>}
      */
-    async connect(ip = null, port = null) {
+    async connect(ip, port = 4370, role = 'IN') {
         try {
-            // Use provided IP or fallback to config
-            const deviceIp = ip || this.config.ip;
-            const devicePort = port || this.config.port;
+            if (!ip) throw new Error('Device IP address is required');
 
-            if (!deviceIp) {
-                throw new Error('Device IP address is required');
+            // Validate IP format
+            const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+            if (!ipRegex.test(ip)) {
+                throw new Error('Invalid IP address format');
             }
 
-            // Create new ZKLib instance
-            this.device = new ZKLib({
-                ip: deviceIp,
-                port: devicePort,
+            // If already connected to this IP, disconnect first
+            if (this.devices.has(ip)) {
+                await this.disconnect(ip);
+            }
+
+            const deviceRole = (role || 'IN').toUpperCase();
+            const deviceInstance = new ZKLib({
+                ip,
+                port,
                 timeout: this.config.timeout,
                 inport: this.config.inport
             });
 
-            // Attempt connection
-            await this.device.createSocket();
-            this.isConnected = true;
+            // Attempt connection with timeout
+            logger.info(`🔌 Attempting to connect to ${ip}:${port}...`);
 
-            // Update config
-            this.config.ip = deviceIp;
-            this.config.port = devicePort;
+            const connectionPromise = deviceInstance.createSocket();
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Connection timeout - device not responding')), 10000)
+            );
 
-            logger.info(`✅ Connected to ZKTeco device at ${deviceIp}:${devicePort}`);
+            await Promise.race([connectionPromise, timeoutPromise]);
+
+            // Verify connection by attempting to get device info
+            try {
+                const deviceInfo = await deviceInstance.getInfo();
+                logger.info(`📱 Device Info: ${JSON.stringify(deviceInfo)}`);
+            } catch (infoError) {
+                // If we can't get device info, connection failed
+                await deviceInstance.disconnect();
+                throw new Error('Device connected but not responding to commands. Check device IP and network.');
+            }
+
+            this.devices.set(ip, {
+                instance: deviceInstance,
+                config: { ip, port, role: deviceRole },
+                isConnected: true
+            });
+
+            logger.info(`✅ Connected to ZKTeco [${deviceRole}] device at ${ip}:${port}`);
 
             // Start listening for attendance events
-            this.startAttendanceListener();
+            this.startAttendanceListener(ip);
 
             return true;
         } catch (error) {
-            this.isConnected = false;
-            logger.error(`❌ Failed to connect to ZKTeco device: ${error.message}`);
+            logger.error(`❌ Failed to connect to ZKTeco device at ${ip}: ${error.message}`);
             throw error;
         }
     }
 
     /**
-     * Disconnect from ZKTeco device
+     * Disconnect from a ZKTeco device
+     * @param {String} ip - Device IP address
      * @returns {Promise<Boolean>}
      */
-    async disconnect() {
+    async disconnect(ip) {
         try {
-            if (this.device && this.isConnected) {
-                // Stop attendance listener
-                this.stopAttendanceListener();
-
-                // Disconnect socket
-                await this.device.disconnect();
-                this.isConnected = false;
-                this.device = null;
-
-                logger.info('🔌 Disconnected from ZKTeco device');
+            const deviceObj = this.devices.get(ip);
+            if (deviceObj && deviceObj.isConnected) {
+                this.stopAttendanceListener(ip);
+                await deviceObj.instance.disconnect();
+                this.devices.delete(ip);
+                logger.info(`🔌 Disconnected from ZKTeco device at ${ip}`);
                 return true;
             }
             return false;
         } catch (error) {
-            logger.error(`Error disconnecting from device: ${error.message}`);
-            this.isConnected = false;
+            logger.error(`Error disconnecting from device ${ip}: ${error.message}`);
             return false;
         }
     }
 
     /**
-     * Get device information
-     * @returns {Promise<Object>}
+     * Start listening for real-time events for a specific device
      */
-    async getDeviceInfo() {
-        this.ensureConnected();
-        try {
-            const info = await this.device.getInfo();
-            return info;
-        } catch (error) {
-            logger.error(`Error getting device info: ${error.message}`);
-            throw error;
-        }
-    }
-
-    /**
-     * Get all users enrolled on the device
-     * @returns {Promise<Array>}
-     */
-    async getEnrolledUsers() {
-        this.ensureConnected();
-        try {
-            const users = await this.device.getUsers();
-            return users.data || [];
-        } catch (error) {
-            logger.error(`Error getting enrolled users: ${error.message}`);
-            throw error;
-        }
-    }
-
-    /**
-     * Enroll/Add a user to the device
-     * @param {String} userId - Unique user ID (member ID)
-     * @param {String} name - User name
-     * @param {Number} cardNumber - Optional card number
-     * @returns {Promise<Boolean>}
-     */
-    async enrollUser(userId, name, cardNumber = 0) {
-        this.ensureConnected();
-        try {
-            // ZKTeco user object
-            const user = {
-                uid: userId.toString(),
-                userid: userId.toString(),
-                name: name,
-                cardno: cardNumber,
-                role: 0, // 0 = normal user, 14 = admin
-                password: ''
-            };
-
-            await this.device.setUser(user);
-            logger.info(`👤 Enrolled user: ${name} (ID: ${userId})`);
-            return true;
-        } catch (error) {
-            logger.error(`Error enrolling user ${userId}: ${error.message}`);
-            throw error;
-        }
-    }
-
-    /**
-     * Remove a user from the device
-     * @param {String} userId - User ID to remove
-     * @returns {Promise<Boolean>}
-     */
-    async removeUser(userId) {
-        this.ensureConnected();
-        try {
-            await this.device.deleteUser(userId.toString());
-            logger.info(`🗑️ Removed user ID: ${userId} from device`);
-            return true;
-        } catch (error) {
-            logger.error(`Error removing user ${userId}: ${error.message}`);
-            throw error;
-        }
-    }
-
-    /**
-     * Bulk enroll multiple users
-     * @param {Array} users - Array of {userId, name, cardNumber} objects
-     * @returns {Promise<Object>} - {success: count, failed: count}
-     */
-    async bulkEnrollUsers(users) {
-        this.ensureConnected();
-        const results = {
-            success: 0,
-            failed: 0,
-            errors: []
-        };
-
-        for (const user of users) {
-            try {
-                await this.enrollUser(user.userId, user.name, user.cardNumber || 0);
-                results.success++;
-            } catch (error) {
-                results.failed++;
-                results.errors.push({
-                    userId: user.userId,
-                    error: error.message
-                });
-            }
-        }
-
-        logger.info(`📊 Bulk enrollment complete: ${results.success} success, ${results.failed} failed`);
-        return results;
-    }
-
-    /**
-     * Get attendance logs from device
-     * @returns {Promise<Array>}
-     */
-    async getAttendanceLogs() {
-        this.ensureConnected();
-        try {
-            const logs = await this.device.getAttendances();
-            return logs.data || [];
-        } catch (error) {
-            logger.error(`Error getting attendance logs: ${error.message}`);
-            throw error;
-        }
-    }
-
-    /**
-     * Clear all attendance records from device
-     * @returns {Promise<Boolean>}
-     */
-    async clearAttendanceLogs() {
-        this.ensureConnected();
-        try {
-            await this.device.clearAttendanceLog();
-            logger.info('🧹 Cleared all attendance logs from device');
-            return true;
-        } catch (error) {
-            logger.error(`Error clearing attendance logs: ${error.message}`);
-            throw error;
-        }
-    }
-
-    /**
-     * Start listening for real-time attendance events
-     */
-    startAttendanceListener() {
-        if (!this.device || !this.isConnected) {
-            logger.warn('Cannot start attendance listener: device not connected');
-            return;
-        }
+    startAttendanceListener(ip) {
+        const deviceObj = this.devices.get(ip);
+        if (!deviceObj) return;
 
         try {
-            // Listen for real-time attendance events
-            this.device.on('attendance', (data) => {
-                this.handleAttendanceEvent(data);
+            deviceObj.instance.on('attendance', (data) => {
+                this.handleAttendanceEvent(data, deviceObj.config);
             });
-
-            logger.info('👂 Started listening for attendance events');
+            logger.info(`👂 Listening for [${deviceObj.config.role}] events from ${ip}`);
         } catch (error) {
-            logger.error(`Error starting attendance listener: ${error.message}`);
+            logger.error(`Error starting listener for ${ip}: ${error.message}`);
+        }
+    }
+
+    stopAttendanceListener(ip) {
+        const deviceObj = this.devices.get(ip);
+        if (deviceObj) {
+            deviceObj.instance.removeAllListeners('attendance');
         }
     }
 
     /**
-     * Stop listening for attendance events
+     * Handle incoming attendance event
      */
-    stopAttendanceListener() {
-        if (this.device) {
-            this.device.removeAllListeners('attendance');
-            logger.info('🔇 Stopped attendance listener');
-        }
-    }
-
-    /**
-     * Handle incoming attendance event from device
-     * @param {Object} data - Attendance data from ZKTeco
-     */
-    async handleAttendanceEvent(data) {
+    async handleAttendanceEvent(data, config) {
         try {
-            logger.info(`📍 Attendance event: User ${data.deviceUserId} at ${data.recordTime}`);
+            logger.info(`📍 [${config.role}] Event: User ${data.deviceUserId} from ${config.ip}`);
 
-            // Emit to Socket.IO for frontend notification
-            getIO().emit('zkteco:attendance', {
+            const eventData = {
                 userId: data.deviceUserId,
                 timestamp: data.recordTime,
-                type: data.attendState
-            });
+                type: data.attendState,
+                deviceRole: config.role,
+                deviceIp: config.ip
+            };
 
-            // Note: Actual attendance saving to MongoDB will be handled by controller
+            // Emit to Socket.IO for real-time dashboard updates
+            getIO().emit('zkteco:attendance', eventData);
+
+            // Process through Access Control Service
+            await accessControl.processAccessRequest(eventData);
+
         } catch (error) {
             logger.error(`Error handling attendance event: ${error.message}`);
         }
     }
 
     /**
-     * Get connection status
-     * @returns {Object}
+     * Get all users from a specific device
      */
-    getStatus() {
-        return {
-            connected: this.isConnected,
-            ip: this.config.ip,
-            port: this.config.port
-        };
+    async getEnrolledUsers(ip) {
+        const deviceObj = this.ensureConnected(ip);
+        try {
+            const users = await deviceObj.instance.getUsers();
+            return users.data || [];
+        } catch (error) {
+            logger.error(`Error getting enrolled users from ${ip}: ${error.message}`);
+            throw error;
+        }
     }
 
     /**
-     * Ensure device is connected before operations
+     * Enroll user on all connected devices
      */
-    ensureConnected() {
-        if (!this.device || !this.isConnected) {
-            throw new Error('Device is not connected. Please connect first.');
+    async enrollUser(userId, name, cardNumber = 0) {
+        const results = [];
+        for (const [ip, deviceObj] of this.devices.entries()) {
+            try {
+                await deviceObj.instance.setUser({
+                    uid: userId.toString(),
+                    userid: userId.toString(),
+                    name: name,
+                    cardno: cardNumber,
+                    role: 0,
+                    password: ''
+                });
+                results.push({ ip, success: true });
+            } catch (error) {
+                results.push({ ip, success: false, error: error.message });
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Remove user from all connected devices
+     */
+    async removeUser(userId) {
+        for (const [ip, deviceObj] of this.devices.entries()) {
+            try {
+                await deviceObj.instance.deleteUser(userId.toString());
+            } catch (error) {
+                logger.error(`Error removing user ${userId} from ${ip}: ${error.message}`);
+            }
         }
     }
+
+    getStatus() {
+        const status = [];
+        for (const [ip, deviceObj] of this.devices.entries()) {
+            status.push({
+                ip,
+                role: deviceObj.config.role,
+                connected: deviceObj.isConnected
+            });
+        }
+        return status;
+    }
+
+    ensureConnected(ip) {
+        const deviceObj = this.devices.get(ip);
+        if (!deviceObj || !deviceObj.isConnected) {
+            throw new Error(`Device at ${ip} is not connected.`);
+        }
+        return deviceObj;
+    }
 }
+
+// Singleton instance
+module.exports = new ZKTecoService();
 
 // Singleton instance
 const zktecoService = new ZKTecoService();

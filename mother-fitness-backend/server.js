@@ -24,6 +24,13 @@ const startServer = async () => {
         server.listen(PORT, '0.0.0.0', () => {
             logger.info(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
             logger.info(`📊 Health check: http://localhost:${PORT}/health`);
+
+            // Start Cloud Sync Worker (only on Local Master)
+            if (process.env.IS_CLOUD_MIRROR !== 'true' && process.env.CLOUD_API_URL) {
+                const CloudSyncService = require('./src/services/CloudSyncService');
+                CloudSyncService.startWorker();
+                logger.info('🔄 Cloud Sync Worker started');
+            }
         });
     } catch (error) {
         logger.error(`Failed to start server: ${error.message}`);

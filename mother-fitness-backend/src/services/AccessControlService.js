@@ -29,6 +29,38 @@ class AccessControlService {
             const customer = await Customer.findOne(query);
 
             if (!customer) {
+                // CHECK ADMIN PROFILE
+                // If not a customer, check if it's an Admin Card ID
+                const { AdminProfile } = require('../models');
+                const adminProfile = await AdminProfile.getSingleton();
+
+                if (adminProfile && adminProfile.memberIds && adminProfile.memberIds.includes(userId.toString())) {
+                    logger.info(`👑 Admin Access Granted: ID ${userId}`);
+
+                    // Create a strict admin "customer" object for UI
+                    const adminUser = {
+                        _id: 'ADMIN',
+                        name: adminProfile.name || 'Admin',
+                        memberId: userId,
+                        photo: adminProfile.photo || '',
+                        status: 'active',
+                        plan: 'OWNER',
+                        isInside: deviceRole === 'IN'
+                    };
+
+                    await hardwareService.openDoor();
+
+                    const result = {
+                        customer: adminUser,
+                        type: deviceRole,
+                        message: 'Welcome Boss! 👑',
+                        isAdmin: true
+                    };
+
+                    this.emitAccessResult('allowed', result);
+                    return { success: true, status: 'allowed', ...result };
+                }
+
                 logger.warn(`⚠️ Access denied: Unknown user ID ${userId}`);
                 const result = { success: false, status: 'denied', reason: 'Unknown Member', userId };
                 this.emitAccessResult('denied', result);
@@ -93,8 +125,20 @@ class AccessControlService {
         // 3. ALLOW ENTRY
         logger.info(`✅ Entry Allowed: ${customer.name}`);
 
-        // Open Door
-        await hardwareService.openDoor();
+        // IMPORTANT: Door Control Architecture
+        // =====================================
+        // Industry Standard (ZKTeco with built-in relay):
+        //   - Backend returns decision: "ALLOW" or "DENY"
+        //   - ZKTeco device controls relay based on decision
+        //   - Device cuts power to maglock for 3 seconds
+        //   - No direct hardware control from software needed
+        //
+        // Optional (Arduino/separate relay controller):
+        //   - The hardwareService.openDoor() below is ONLY for
+        //     separate door controllers via serial port
+        //   - NOT needed when using ZKTeco's built-in relay
+        //   - Can be disabled if not using external controller
+        await hardwareService.openDoor(); // Optional: External door controller only
 
         // Update Customer Status
         customer.isInside = true;
@@ -137,8 +181,9 @@ class AccessControlService {
 
         logger.info(`🚪 Exit Triggered: ${customer.name}`);
 
-        // Open Door - ALWAYS for exit safety
-        await hardwareService.openDoor();
+        // Exit always opens (safety/legal requirement)
+        // ZKTeco device controls relay, this is optional for external controllers
+        await hardwareService.openDoor(); // Optional: External door controller only
 
         // Update Customer Status
         customer.isInside = false;

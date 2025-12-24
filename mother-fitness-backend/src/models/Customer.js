@@ -89,6 +89,14 @@ const customerSchema = new mongoose.Schema({
         default: [],
         enum: ['Bronze', 'Silver', 'Gold', 'Beast Mode'],
     },
+    // Real-time status
+    isInside: {
+        type: Boolean,
+        default: false,
+    },
+    lastActivity: {
+        type: Date,
+    },
 }, {
     timestamps: true,
 });
@@ -176,6 +184,11 @@ customerSchema.pre('save', async function (next) {
             } else {
                 this.memberId = 'U001';
             }
+        }
+
+        // Set default password if not provided
+        if (!this.password) {
+            this.password = '0000'; // Default member password
         }
 
         next();

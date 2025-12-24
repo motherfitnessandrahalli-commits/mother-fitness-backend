@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Biometric Tester</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #0f172a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            /* Fix padding issue */
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        button {
+            padding: 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-in {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .btn-out {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        #status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            display: none;
+        }
+
+        .success {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid #059669;
+        }
+
+        .error {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid #dc2626;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>📱 Mobile Tester</h1>
+
+        <div class="input-group">
+            <label for="userId">Member ID / User ID</label>
+            <input type="text" id="userId" placeholder="e.g. U010 or M001" value="M001">
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-in" onclick="sendEvent('IN')">📥 IN</button>
+            <button class="btn-out" onclick="sendEvent('OUT')">📤 OUT</button>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        async function sendEvent(direction) {
+            const userId = document.getElementById('userId').value;
+            const statusEl = document.getElementById('status');
+
+            if (!userId) {
+                showStatus('Please enter a User ID', 'error');
+                return;
+            }
+
+            statusEl.style.display = 'block';
+            statusEl.textContent = 'Sending...';
+            statusEl.className = '';
+
+            try {
+                const response = await fetch('/api/biometric/mock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        direction: direction,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showStatus(`✅ ${direction} Recorded: ${data.decision}`, 'success');
+                } else {
+                    showStatus(`❌ Error: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status');
+            el.style.display = 'block';
+            el.textContent = msg;
+            el.className = type;
+        }
+    </script>
+</body>
+
+</html>

@@ -85,7 +85,7 @@ CORS_ORIGIN=http://localhost:5000
 ### Admin Dashboard
 - Member management (add, edit, delete customers)
 - Payment tracking and history
-- Attendance monitoring via QR code scanning
+- Attendance monitoring via manual entry and biometric device synchronization
 - Analytics and reporting
 - Announcements system
 - Excel import/export functionality

@@ -39,6 +39,15 @@ const attendanceSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
+    type: {
+        type: String,
+        enum: ['IN', 'OUT'],
+        default: 'IN',
+    },
+    deviceId: {
+        type: String,
+        default: 'manual',
+    },
 }, {
     timestamps: { createdAt: true, updatedAt: false }, // Only track creation time
 });
@@ -58,8 +67,8 @@ attendanceSchema.pre('save', async function (next) {
     }
 });
 
-// Compound index to prevent duplicate check-ins on same day
-attendanceSchema.index({ customerId: 1, date: 1 }, { unique: true });
+// Compound index to allow multiple sessions per day, but unique per timestamp
+attendanceSchema.index({ customerId: 1, timestamp: 1 }, { unique: true });
 
 // Indexes for faster queries
 attendanceSchema.index({ date: 1 });

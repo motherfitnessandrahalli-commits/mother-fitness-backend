@@ -4,11 +4,13 @@ const Customer = require('./Customer');
 const Attendance = require('./Attendance');
 const Payment = require('./Payment');
 const TimelineEvent = require('./TimelineEvent');
+const AdminProfile = require('./AdminProfile');
 
 module.exports = {
     User,
     Customer,
     Attendance,
     Payment,
-    TimelineEvent
+    TimelineEvent,
+    AdminProfile
 };
