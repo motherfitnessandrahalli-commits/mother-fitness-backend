@@ -226,7 +226,8 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
     const dailyProfit = await Payment.aggregate([
         {
             $match: {
-                paymentDate: { $gte: dailyStart, $lte: dailyEnd }
+                paymentDate: { $gte: dailyStart, $lte: dailyEnd },
+                status: 'completed'
             }
         },
         {
@@ -244,7 +245,8 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
     const weeklyProfit = await Payment.aggregate([
         {
             $match: {
-                paymentDate: { $gte: weeklyStart, $lte: dailyEnd }
+                paymentDate: { $gte: weeklyStart, $lte: dailyEnd },
+                status: 'completed'
             }
         },
         {
@@ -262,7 +264,8 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
     const monthlyProfit = await Payment.aggregate([
         {
             $match: {
-                paymentDate: { $gte: monthlyStart, $lte: monthlyEnd }
+                paymentDate: { $gte: monthlyStart, $lte: monthlyEnd },
+                status: 'completed'
             }
         },
         {
@@ -280,7 +283,8 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
     const yearlyProfit = await Payment.aggregate([
         {
             $match: {
-                paymentDate: { $gte: yearlyStart, $lte: yearlyEnd }
+                paymentDate: { $gte: yearlyStart, $lte: yearlyEnd },
+                status: 'completed'
             }
         },
         {

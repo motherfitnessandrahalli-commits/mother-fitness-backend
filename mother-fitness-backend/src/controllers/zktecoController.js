@@ -131,6 +131,12 @@ const removeMember = asyncHandler(async (req, res, next) => {
  * @access  Private (Admin)
  */
 const syncAllMembers = asyncHandler(async (req, res, next) => {
+    const connectedDevices = zktecoService.getStatus().filter(d => d.connected);
+
+    if (connectedDevices.length === 0) {
+        return next(new AppError('No connected biometric devices found. Please connect a device first.', 400));
+    }
+
     // Get all active customers
     const customers = await Customer.find({ status: { $in: ['active', 'expiring'] } });
 
@@ -145,15 +151,15 @@ const syncAllMembers = asyncHandler(async (req, res, next) => {
         cardNumber: 0
     }));
 
-    // Bulk enroll (Note: current service bulkEnroll only does first device or needs update)
-    const results = { success: 0, failed: 0 };
+    // Bulk enroll
+    const results = { success: 0, failed: 0, total: users.length };
     for (const user of users) {
-        const res = await zktecoService.enrollUser(user.userId, user.name);
-        if (res.every(r => r.success)) results.success++;
+        const syncRes = await zktecoService.enrollUser(user.userId, user.name);
+        if (syncRes.length > 0 && syncRes.some(r => r.success)) results.success++;
         else results.failed++;
     }
 
-    sendSuccess(res, 200, results, `Synced ${results.success} members to device(s)`);
+    sendSuccess(res, 200, results, `Successfully synced ${results.success} members across ${connectedDevices.length} device(s)`);
 });
 
 /**

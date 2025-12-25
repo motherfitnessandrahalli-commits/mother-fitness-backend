@@ -228,9 +228,5 @@ class ZKTecoService {
 }
 
 // Singleton instance
-module.exports = new ZKTecoService();
-
-// Singleton instance
 const zktecoService = new ZKTecoService();
-
 module.exports = zktecoService;

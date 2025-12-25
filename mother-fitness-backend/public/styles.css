@@ -314,10 +314,9 @@ body.light-mode::before {
 }
 
 .stat-card {
-    background: var(--bg-card);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--border-color);
+    border: none !important;
     border-radius: var(--radius-lg);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     padding: var(--spacing-lg);
     display: flex;
     align-items: center;
@@ -1293,7 +1292,7 @@ body.light-mode .ios-select:hover {
     padding: 20px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    border: 1px solid var(--border-color);
+    border: none;
 }
 
 .chart-card:hover {
@@ -2344,13 +2343,14 @@ body.light-mode #payment-view {
     display: flex;
 }
 
+
 /* Payment Modal Content */
 .payment-modal-content {
     position: relative;
     background: var(--bg-card);
     backdrop-filter: blur(20px);
-    border: 1px solid var(--border-color);
-    border-radius: 24px;
+    border: none !important;
+    border-radius: 30px;
     max-width: 600px;
     width: 90%;
     max-height: 90vh;
@@ -3185,6 +3185,8 @@ body.light-mode #payment-view {
         aspect-ratio: auto;
         border-radius: 30px;
         padding: 1.5rem;
+        border: none !important;
+        box-shadow: var(--shadow-xl);
     }
 
     .admin-name {
@@ -4235,6 +4237,13 @@ body.light-mode #payment-view {
 .device-settings-dashboard {
     padding: 20px 0;
     animation: fadeIn var(--transition-base);
+}
+
+.linked-devices-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
 }
 
 .settings-grid {

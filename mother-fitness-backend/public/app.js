@@ -420,6 +420,12 @@ class GymApp {
     }
 
     async syncAllMembers() {
+        if (!this.deviceConnected) {
+            this.showNotification('error', 'Device Required', 'Please connect at least one biometric device before syncing.');
+            this.toggleView('device-settings');
+            return;
+        }
+
         const confirmSync = confirm('This will enroll all active members to the device. Continue?');
         if (!confirmSync) return;
 
@@ -429,31 +435,29 @@ class GymApp {
             const progress = document.getElementById('enrollment-progress');
             const message = document.getElementById('enrollment-message');
 
-            statusDiv.style.display = 'block';
-            progress.style.width = '0%';
-            message.textContent = 'Starting enrollment...';
+            if (statusDiv) statusDiv.style.display = 'block';
+            if (progress) progress.style.width = '20%';
+            if (message) message.textContent = 'Contacting device...';
 
-            const response = await this.api.request('/api/zkteco/sync-all-members', {
-                method: 'POST'
-            });
+            const response = await this.api.syncZKTeco();
 
-            const { success, failed } = response.data;
+            const { success, failed } = response.data || { success: 0, failed: 0 };
 
-            progress.style.width = '100%';
-            message.textContent = `✅ Synced ${success} members successfully. ${failed > 0 ? `${failed} failed.` : ''}`;
+            if (progress) progress.style.width = '100%';
+            if (message) message.textContent = `✅ Synced ${success} members successfully. ${failed > 0 ? `${failed} failed.` : ''}`;
 
             this.showNotification('success', 'Sync Complete', `Enrolled ${success} members to device`);
-            this.logActivity(`Synced ${success} members to device`);
 
             // Update stats
-            await this.refreshEnrolledUsers();
+            await this.loadZKTecoStatus();
         } catch (error) {
-            document.getElementById('enrollment-message').textContent = `❌ Sync failed: ${error.message}`;
-            this.showNotification('error', 'Sync Failed', error.message);
+            console.error('Sync failed:', error);
+            this.showNotification('error', 'Sync Failed', error.message || 'Could not sync members to device');
         } finally {
             this.setLoading(false);
         }
     }
+
 
     async refreshEnrolledUsers() {
         try {
@@ -1107,16 +1111,11 @@ class GymApp {
     }
 
     async syncZKTeco() {
-        try {
-            this.setLoading(true);
-            await this.api.syncZKTeco();
-            this.showNotification('success', 'Sync Triggered', 'Device synchronization started');
-            await this.loadZKTecoStatus();
-        } catch (error) {
-            this.showNotification('error', 'Sync Failed', error.message);
-        } finally {
-            this.setLoading(false);
+        if (!this.deviceConnected) {
+            this.showNotification('error', 'Device Required', 'No devices are currently connected. Please add a device first.');
+            return;
         }
+        await this.syncAllMembers();
     }
 
     // ===================================
@@ -2726,7 +2725,7 @@ class GymApp {
                 emptyState.style.display = 'flex';
                 // Update message if filtered
                 if (!dateFilter) {
-                    emptyState.querySelector('h3').textContent = "No Check-ins Today";
+                    emptyState.querySelector('h2').textContent = "No Check-ins Today";
                     emptyState.querySelector('p').textContent = "Attendance records will appear here as members check in.";
                 }
                 return;
