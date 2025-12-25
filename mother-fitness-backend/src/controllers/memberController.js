@@ -170,12 +170,22 @@ const getMemberPayments = asyncHandler(async (req, res, next) => {
 
     const skip = (page - 1) * limit;
 
-    const payments = await Payment.find({ customerId: req.user.id })
+    console.log(`[MemberPayments] Fetching for user: ${req.user.id}`);
+
+    // Explicitly cast to ObjectId to ensure query matches DB type
+    const mongoose = require('mongoose');
+    const userId = new mongoose.Types.ObjectId(req.user.id);
+
+    // Debug: Check if payments exist for this ID directly
+    const verifyCount = await Payment.countDocuments({ customerId: userId });
+    console.log(`[MemberPayments] Found ${verifyCount} payments in DB for this user`);
+
+    const payments = await Payment.find({ customerId: userId })
         .sort({ paymentDate: -1 })
         .limit(parseInt(limit))
         .skip(skip);
 
-    const total = await Payment.countDocuments({ customerId: req.user.id });
+    const total = await Payment.countDocuments({ customerId: userId });
 
     sendSuccess(res, 200, {
         payments,
