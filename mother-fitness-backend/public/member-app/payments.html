@@ -22,7 +22,7 @@
 
         <main class="app-main">
             <div id="paymentList" class="list-container">
-                <p class="loading">Loading payments...</p>
+                <p class="loading">Loading payments... (v4.0)</p>
             </div>
         </main>
     </div>
@@ -62,7 +62,7 @@
                             <p class="item-meta">${payment.paymentMethod} ${payment.receiptNumber ? `• Receipt: ${payment.receiptNumber}` : ''}</p>
                         </div>
                         <button class="btn-download-receipt" onclick="downloadReceipt('${payment._id}')" title="Download Receipt">
-                            📄
+                            📄 Download
                         </button>
                     `;
                     container.appendChild(div);
@@ -75,12 +75,21 @@
         }
 
         async function downloadReceipt(paymentId) {
+            // Mobile-safe download method: Open window immediately
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            let downloadWindow = null;
+
+            if (isMobile) {
+                downloadWindow = window.open('', '_blank');
+                if (downloadWindow) {
+                    downloadWindow.document.write('Loading receipt...');
+                }
+            }
+
             try {
                 const token = api.token;
                 const url = `${api.baseUrl}/api/member/payments/${paymentId}/receipt`;
 
-                // For mobile compatibility, open PDF in new tab
-                // Mobile browsers handle this better than forced downloads
                 const response = await fetch(url, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -94,14 +103,10 @@
                 const blob = await response.blob();
                 const blobUrl = window.URL.createObjectURL(blob);
 
-                // Check if mobile device
-                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-                if (isMobile) {
-                    // On mobile, open in new tab
-                    window.open(blobUrl, '_blank');
+                if (isMobile && downloadWindow) {
+                    downloadWindow.location.href = blobUrl;
                 } else {
-                    // On desktop, force download
+                    // Desktop or if popup failed
                     const link = document.createElement('a');
                     link.href = blobUrl;
                     link.download = `receipt-${paymentId}.pdf`;
@@ -110,10 +115,11 @@
                     document.body.removeChild(link);
                 }
 
-                // Cleanup after a delay
-                setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+                // Cleanup
+                setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000); // 1 min delay for mobile view
             } catch (error) {
                 console.error('Download error:', error);
+                if (downloadWindow) downloadWindow.close();
                 alert('Failed to download receipt. Please try again.');
             }
         }
