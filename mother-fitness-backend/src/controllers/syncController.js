@@ -64,6 +64,13 @@ const syncData = asyncHandler(async (req, res, next) => {
         logger.info(`Synced ${type}: ${data._id}`);
         sendSuccess(res, 200, result, `Successfully synced ${type}`);
     } catch (error) {
+        // If it's a duplicate key error, we consider it "synced" (it already exists in some form)
+        // to prevent blocking the entire sync queue for other important data like Customer login
+        if (error.code === 11000 || error.message.includes('E11000')) {
+            logger.warn(`Sync duplicate key caught for ${type} (${data._id}): ${error.message}`);
+            return sendSuccess(res, 200, { duplicated: true }, `Already exists, skipping duplicate`);
+        }
+
         logger.error(`Sync error for ${type}: ${error.message}`);
         return next(new AppError(`Sync failed: ${error.message}`, 500));
     }
