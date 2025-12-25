@@ -17,24 +17,45 @@ const syncData = asyncHandler(async (req, res, next) => {
     }
 
     let result;
-    const filter = { _id: data._id };
     const options = { upsert: true, new: true, setDefaultsOnInsert: true };
+    const dataId = data._id;
 
     try {
         switch (type) {
-            case 'customer':
-                // For customers, don't trigger pre-save password hashing if it's already hashed
-                // But in this sync model, we are mostly just mirroring data
-                result = await Customer.findOneAndUpdate(filter, data, options);
+            case 'customer': {
+                // Try finding by memberId first, then cloudId, then _id
+                const searchFilter = {
+                    $or: [
+                        { memberId: data.memberId },
+                        { customerId: data.customerId },
+                        { _id: dataId }
+                    ]
+                };
+                result = await Customer.findOneAndUpdate(searchFilter, data, options);
                 break;
+            }
 
-            case 'attendance':
-                result = await Attendance.findOneAndUpdate(filter, data, options);
+            case 'attendance': {
+                const searchFilter = {
+                    $or: [
+                        { attendanceId: data.attendanceId },
+                        { _id: dataId }
+                    ]
+                };
+                result = await Attendance.findOneAndUpdate(searchFilter, data, options);
                 break;
+            }
 
-            case 'payment':
-                result = await Payment.findOneAndUpdate(filter, data, options);
+            case 'payment': {
+                const searchFilter = {
+                    $or: [
+                        { paymentId: data.paymentId },
+                        { _id: dataId }
+                    ]
+                };
+                result = await Payment.findOneAndUpdate(searchFilter, data, options);
                 break;
+            }
 
             default:
                 return next(new AppError('Invalid sync type', 400));
