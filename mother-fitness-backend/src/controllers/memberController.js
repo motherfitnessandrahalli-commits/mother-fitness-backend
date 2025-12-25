@@ -22,16 +22,21 @@ const memberLogin = asyncHandler(async (req, res, next) => {
     // Find customer with password field
     const customer = await Customer.findOne({ memberId: upperMemberId }).select('+password');
     if (!customer) {
+        console.warn(`[Login] User not found: ${upperMemberId}`);
         return next(new AppError('Invalid member ID or password', 401));
     }
 
     // Check if customer has password set
     if (!customer.password) {
+        console.warn(`[Login] No password set for: ${upperMemberId}`);
         return next(new AppError('Member account not activated. Contact admin.', 401));
     }
 
     // Verify password
+    console.log(`[Login] Attempting password verify for: ${upperMemberId}`);
     const isMatch = await customer.comparePassword(password);
+    console.log(`[Login] Password match result for ${upperMemberId}: ${isMatch}`);
+
     if (!isMatch) {
         return next(new AppError('Invalid member ID or password', 401));
     }
