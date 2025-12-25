@@ -132,7 +132,15 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
             // Sort by severity: CRITICAL > WARNING > WATCH
             const order = { 'CRITICAL': 0, 'WARNING': 1, 'WATCH': 2 };
             return order[a.severity] - order[b.severity];
-        })
+        }),
+        risks: {
+            churnCount: attentionList.filter(a => a.issue === 'Attendance Drop').length,
+            leakageCount: revenueLeakageMembers.length,
+            churnMembers: attentionList.filter(a => a.issue === 'Attendance Drop').map(a => ({
+                name: a.name,
+                lastVisit: null // Detail would be in the alert message
+            }))
+        }
     });
 });
 

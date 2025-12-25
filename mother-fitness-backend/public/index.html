@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mother Fitness - Gym Management System</title>
+    <title>Mother Fitness - Intelligent Gym Management</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -282,6 +284,21 @@
                         </div>
                         <div id="health-status" class="health-status-badge">Checking...</div>
                         <p class="health-meta" id="health-meta-text">Active usage baseline</p>
+                    </div>
+
+                    <!-- Risk Summary Cards -->
+                    <div class="intel-card">
+                        <h3>Churn Risk</h3>
+                        <div style="font-size: 3rem; font-weight: 800; text-align: center; margin: 20px 0; color: var(--warning-color);"
+                            id="churn-count">0</div>
+                        <p style="text-align: center; color: var(--text-secondary);">High risk members</p>
+                    </div>
+
+                    <div class="intel-card">
+                        <h3>Revenue Leakage</h3>
+                        <div style="font-size: 3rem; font-weight: 800; text-align: center; margin: 20px 0; color: var(--danger-color);"
+                            id="leakage-count">0</div>
+                        <p style="text-align: center; color: var(--text-secondary);">Expired visits this week</p>
                     </div>
 
                     <!-- AGI Attention List Section -->

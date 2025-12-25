@@ -4897,5 +4897,136 @@ body.light-mode #payment-view {
     z-index: 2147483647 !important;
     /* Max Z-Index */
     position: fixed;
-    /* Ensure it floats */
+    /* Ensure it floats */      
+}
+
+/* Intelligence Dashboard Specific Styles */
+.intel-card.full-width-card {
+    grid-column: 1 / -1;
+}
+
+.intel-tag {
+    background: rgba(124, 58, 237, 0.2);
+    color: #a78bfa;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.intel-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.intel-table th {
+    text-align: left;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.intel-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.member-cell .member-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.member-cell .member-id {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.issue-tag {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.severity-badge {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.severity-badge.critical {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.severity-badge.warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.severity-badge.watch {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+.detail-cell {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    max-width: 300px;
+}
+
+.circular-chart-container {
+    width: 120px;
+    height: 120px;
+    margin: 20px auto;
+}
+
+.circular-chart {
+    display: block;
+    margin: 10px auto;
+    max-width: 100%;
+    max-height: 250px;
+}
+
+.circle-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.05);
+    stroke-width: 2.8;
+}
+
+.circle {
+    fill: none;
+    stroke: var(--primary-color);
+    stroke-width: 2.8;
+    stroke-linecap: round;
+    transition: stroke-dasharray 1s ease 0s;
+}
+
+.percentage {
+    fill: var(--text-primary);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    text-anchor: middle;
+    font-weight: 800;
+}
+
+.health-status-badge {
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 5px;
+}
+
+.health-meta {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
 }

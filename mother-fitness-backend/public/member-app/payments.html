@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#6c5ce7">
     <title>Payments - Mother Fitness</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💪</text></svg>">
     <link rel="stylesheet" href="./styles.css">
 </head>
 
@@ -37,12 +39,18 @@
                 const container = document.getElementById('paymentList');
                 container.innerHTML = '';
 
-                if (response.data.payments.length === 0) {
+                // Handle both response.data.payments and response.payments formats
+                const payments = response.data?.payments || response.payments || [];
+
+                console.log('Payments response:', response);
+                console.log('Payments array:', payments);
+
+                if (!payments || payments.length === 0) {
                     container.innerHTML = '<p class="empty-state">No payment records yet</p>';
                     return;
                 }
 
-                response.data.payments.forEach(payment => {
+                payments.forEach(payment => {
                     const date = new Date(payment.paymentDate);
                     const div = document.createElement('div');
                     div.className = 'list-item payment-item';
@@ -60,8 +68,9 @@
                     container.appendChild(div);
                 });
             } catch (error) {
+                console.error('Payment load error:', error);
                 document.getElementById('paymentList').innerHTML =
-                    '<p class="error-state">Failed to load payments</p>';
+                    '<p class="error-state">Failed to load payments. ' + error.message + '</p>';
             }
         }
 

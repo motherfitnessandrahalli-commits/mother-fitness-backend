@@ -413,6 +413,23 @@ class GymApp {
             alert('Element #scan-status not found! Are you on the Access Monitoring view?');
         }
     }
+    handleAlertAction(memberId, issue) {
+        console.log(`Action triggered for ${memberId}: ${issue}`);
+
+        // Find existing customer
+        const customer = this.customers.find(c => c.memberId === memberId);
+
+        if (issue === 'Revenue Leakage' || issue === 'Attendance Drop') {
+            // Open customer modal to take direct action
+            if (customer) {
+                this.openCustomerModal(customer.id);
+            } else {
+                this.showNotification('info', 'Member Details', `Action for ${memberId}: ${issue}. Member details not pre-loaded.`);
+            }
+        } else {
+            this.showNotification('info', 'Intelligent Action', `Recommended: ${issue} for ${memberId}.`);
+        }
+    }
     // ------------------------------------------
 
     toggleIntelligenceView() {
@@ -576,35 +593,46 @@ class GymApp {
                 statusText.style.color = 'var(--text-secondary)';
             }
 
-            // Update Churn Risk
+            // Update Churn Risk & Leakage Counts
             const churnCount = document.getElementById('churn-count');
-            const churnList = document.getElementById('churn-list');
-
-            if (churnCount && risks && typeof risks.churnCount !== 'undefined') {
-                churnCount.textContent = risks.churnCount;
-            } else if (churnCount) {
-                churnCount.textContent = '0';
-            }
-
-            if (churnList && risks && risks.churnMembers && Array.isArray(risks.churnMembers)) {
-                churnList.innerHTML = risks.churnMembers.length > 0
-                    ? risks.churnMembers.map(m => `
-                        <div class="mini-item">
-                            <span class="name">${m.name || 'Unknown'}</span>
-                            <span class="meta">Last visit: ${m.lastVisit ? new Date(m.lastVisit).toLocaleDateString() : 'Never'}</span>
-                        </div>
-                    `).join('')
-                    : '<p class="empty-text">No high risk members detected.</p>';
-            } else if (churnList) {
-                churnList.innerHTML = '<p class="empty-text">No data available.</p>';
-            }
-
-            // Update Leakage
             const leakageCount = document.getElementById('leakage-count');
-            if (leakageCount && risks && typeof risks.leakageCount !== 'undefined') {
-                leakageCount.textContent = risks.leakageCount;
-            } else if (leakageCount) {
-                leakageCount.textContent = '0';
+
+            if (churnCount && risks) churnCount.textContent = risks.churnCount || '0';
+            if (leakageCount && risks) leakageCount.textContent = risks.leakageCount || '0';
+
+            // Update Attention List Table
+            const attentionListBody = document.getElementById('attention-list-body');
+            const attentionList = response.data ? response.data.attentionList : (response.attentionList || []);
+
+            if (attentionListBody) {
+                if (!attentionList || attentionList.length === 0) {
+                    attentionListBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                No urgent issues detected. Gym is healthy! ✅
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    attentionListBody.innerHTML = attentionList.map(item => `
+                        <tr>
+                            <td>
+                                <div class="member-cell">
+                                    <div class="member-name">${item.name}</div>
+                                    <div class="member-id">${item.memberId}</div>
+                                </div>
+                            </td>
+                            <td><span class="issue-tag">${item.issue}</span></td>
+                            <td class="detail-cell">${item.detail}</td>
+                            <td><span class="severity-badge ${item.severity.toLowerCase()}">${item.severity}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline" onclick="app.handleAlertAction('${item.memberId}', '${item.issue}')">
+                                    ${item.action}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
             }
 
         } catch (error) {

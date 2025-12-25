@@ -111,6 +111,9 @@ app.use('/member-app', express.static(path.join(__dirname, '../public/member-app
 // Serve Admin Panel static files (at root) - AFTER API routes
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Handle favicon.ico requests to prevent 404 errors
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // 404 handler - MUST BE LAST
 app.use((req, res) => {
     res.status(404).json({

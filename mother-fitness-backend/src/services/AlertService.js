@@ -70,10 +70,19 @@ class AlertService {
 
         for (const event of events) {
             if (event.type === 'IN') {
+                if (currentIn) {
+                    // Previous IN had no OUT. Assume a default 60min session if it was a different day
+                    // to keep the data somewhat useful without over-counting
+                    const lastInTime = new Date(currentIn.timestamp);
+                    const currentInTime = new Date(event.timestamp);
+                    if (lastInTime.toDateString() !== currentInTime.toDateString()) {
+                        sessions.push({ timestamp: currentIn.timestamp, duration: 60 });
+                    }
+                }
                 currentIn = event;
             } else if (event.type === 'OUT' && currentIn) {
                 const durationMinutes = (event.timestamp - currentIn.timestamp) / (1000 * 60);
-                if (durationMinutes > 5 && durationMinutes < 240) { // Valid session (5m to 4h)
+                if (durationMinutes > 2 && durationMinutes < 300) { // Valid session (2m to 5h)
                     sessions.push({
                         timestamp: currentIn.timestamp,
                         duration: durationMinutes
