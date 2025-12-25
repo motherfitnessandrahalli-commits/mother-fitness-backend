@@ -3728,6 +3728,33 @@ class GymApp {
         this.adminEditAuth = null;
     }
 
+    async handleAdminPhotoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Show loading state
+        const btn = event.target.nextElementSibling;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '⏳ Uploading...';
+        btn.disabled = true;
+
+        try {
+            const result = await this.api.uploadPhoto(file);
+
+            const data = result.data || result;
+            const photoUrl = data.path;
+
+            document.getElementById('edit-admin-photo').value = photoUrl;
+            this.showNotification('success', 'Image Uploaded', 'Photo URL has been updated');
+        } catch (error) {
+            console.error('Photo upload failed:', error);
+            this.showNotification('error', 'Upload Failed', error.message || 'Could not upload photo');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
     async saveAdminProfile(event) {
         event.preventDefault();
 

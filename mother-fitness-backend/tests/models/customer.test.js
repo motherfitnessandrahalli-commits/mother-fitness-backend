@@ -24,6 +24,26 @@ describe('Customer Model Test', () => {
         expect(savedCustomer.name).toBe(customerData.name);
     });
 
+    it('should compare password correctly', async () => {
+        const customer = new Customer({
+            name: 'Auth Test',
+            email: 'auth@example.com',
+            phone: '0000',
+            age: 20,
+            plan: 'Monthly',
+            validity: new Date(),
+            password: 'testpassword'
+        });
+        await customer.save();
+
+        const foundCustomer = await Customer.findOne({ name: 'Auth Test' }).select('+password');
+        const isMatch = await foundCustomer.comparePassword('testpassword');
+        const isNotMatch = await foundCustomer.comparePassword('wrongpassword');
+
+        expect(isMatch).toBe(true);
+        expect(isNotMatch).toBe(false);
+    });
+
     it('should calculate status correctly', () => {
         const customer = new Customer({
             name: 'Jane Doe',

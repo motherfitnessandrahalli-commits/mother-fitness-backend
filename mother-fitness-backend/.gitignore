@@ -58,3 +58,5 @@ filter_log.js
 wipe_all.js
 verify_swagger.js
 
+# Local Data
+data/

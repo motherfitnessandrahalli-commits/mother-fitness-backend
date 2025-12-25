@@ -137,10 +137,41 @@ customerSchema.virtual('daysRemaining').get(function () {
 customerSchema.set('toJSON', { virtuals: true });
 customerSchema.set('toObject', { virtuals: true });
 
-// Hash password before saving (only if password is modified)
+// Pre-save hook: Handle ID generation and password hashing
 customerSchema.pre('save', async function (next) {
-    // Skip if password is not modified
-    if (!this.isModified('password') || !this.password) {
+    // 1. Handle ID generation for new customers
+    if (this.isNew) {
+        try {
+            // Generate internal customerId
+            if (!this.customerId) {
+                this.customerId = 'cust_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            // Auto-generate Member ID (U001, U002, etc.) if not provided
+            if (!this.memberId) {
+                const lastCustomer = await this.constructor.findOne({
+                    memberId: { $regex: /^U\d+$/ }
+                }).sort({ memberId: -1 });
+
+                if (lastCustomer && lastCustomer.memberId) {
+                    const lastId = parseInt(lastCustomer.memberId.replace('U', ''));
+                    this.memberId = 'U' + String(lastId + 1).padStart(3, '0');
+                } else {
+                    this.memberId = 'U001';
+                }
+            }
+
+            // Set default password if not provided
+            if (!this.password) {
+                this.password = '0000'; // Default member password
+            }
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    // 2. Hash password if modified (or newly set as default)
+    if (!this.isModified('password')) {
         return next();
     }
 
@@ -156,46 +187,16 @@ customerSchema.pre('save', async function (next) {
 // Method to compare password
 customerSchema.methods.comparePassword = async function (candidatePassword) {
     try {
+        if (!this.password) {
+            console.error('[Auth] Compare failed: No password hash for user', this.memberId);
+            return false;
+        }
         return await bcrypt.compare(candidatePassword, this.password);
     } catch (error) {
-        throw new Error('Password comparison failed');
+        console.error('[Auth] comparePassword error:', error);
+        throw new Error('Password comparison failed: ' + error.message);
     }
 };
-
-// Generate unique customer ID and Member ID before saving
-customerSchema.pre('save', async function (next) {
-    if (!this.isNew) {
-        return next();
-    }
-
-    try {
-        // Generate internal customerId
-        this.customerId = 'cust_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-
-        // Auto-generate Member ID (U001, U002, etc.) if not provided
-        if (!this.memberId) {
-            const lastCustomer = await this.constructor.findOne({
-                memberId: { $regex: /^U\d+$/ }
-            }).sort({ memberId: -1 });
-
-            if (lastCustomer && lastCustomer.memberId) {
-                const lastId = parseInt(lastCustomer.memberId.replace('U', ''));
-                this.memberId = 'U' + String(lastId + 1).padStart(3, '0');
-            } else {
-                this.memberId = 'U001';
-            }
-        }
-
-        // Set default password if not provided
-        if (!this.password) {
-            this.password = '0000'; // Default member password
-        }
-
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
 
 // Indexes for faster queries
 customerSchema.index({ customerId: 1 });

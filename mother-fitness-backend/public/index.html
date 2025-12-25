@@ -268,7 +268,7 @@
                 <div class="intelligence-grid">
                     <!-- Business Health Score Card -->
                     <div class="intel-card">
-                        <h3>Business Health Score</h3>
+                        <h3>Gym Health Score</h3>
                         <div class="circular-chart-container">
                             <svg viewBox="0 0 36 36" class="circular-chart">
                                 <path class="circle-bg" d="M18 2.0845
@@ -280,25 +280,38 @@
                                 <text x="18" y="20.35" class="percentage" id="health-score-val">0%</text>
                             </svg>
                         </div>
-                        <div id="health-status">Checking...</div>
+                        <div id="health-status" class="health-status-badge">Checking...</div>
+                        <p class="health-meta" id="health-meta-text">Active usage baseline</p>
                     </div>
 
-                    <!-- Churn Risk Card -->
-                    <div class="intel-card">
-                        <h3>Churn Prediction (High Risk)</h3>
-                        <div class="stat-value" id="churn-count">0</div>
-                        <p class="stat-label">Members likely to leave</p>
-                        <div class="mini-list" id="churn-list">
-                            <!-- Populated by JS -->
+                    <!-- AGI Attention List Section -->
+                    <div class="intel-card full-width-card">
+                        <div class="card-header-flex">
+                            <h3>⚠️ Attention List (Intelligent Alerts)</h3>
+                            <span class="intel-tag">AGI Rule-Based</span>
                         </div>
-                    </div>
-
-                    <!-- Revenue Leakage Card -->
-                    <div class="intel-card">
-                        <h3>Revenue Protection</h3>
-                        <div class="stat-value" id="leakage-count">0</div>
-                        <p class="stat-label">Expired but actively visiting</p>
-                        <p class="stat-meta">Potential lost revenue this month</p>
+                        <div class="table-container list-scroll-container">
+                            <table class="data-table intel-table">
+                                <thead>
+                                    <tr>
+                                        <th>Member</th>
+                                        <th>Issue Identified</th>
+                                        <th>Reason / Data</th>
+                                        <th>Severity</th>
+                                        <th>Suggested Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attention-list-body">
+                                    <!-- AGI Alerts populated by JS -->
+                                    <tr>
+                                        <td colspan="5"
+                                            style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                            Analyzing behavior trends...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1029,53 +1042,50 @@
     <!-- Admin Profile Modal -->
     <div id="admin-profile-modal" class="custom-modal-overlay">
         <div class="custom-modal admin-profile-card">
-            <button class="modal-close" onclick="app.toggleAdminCard()">✕</button>
+            <button class="close-modal" onclick="app.toggleAdminCard()">✕</button>
 
             <!-- View Mode -->
             <div id="admin-view-mode">
-                <div class="admin-photo-container">
-                    <img id="admin-photo-display"
-                        src="https://ui-avatars.com/api/?name=Mahesh+P&background=6c5ce7&color=fff&size=200"
-                        alt="Admin Photo" class="admin-photo">
-                    <div class="admin-badge">👑 OWNER</div>
+                <div class="admin-card-glass-glow"></div>
+                <div class="admin-card-header">
+                    <div class="admin-photo-container">
+                        <img id="admin-photo-display"
+                            src="https://ui-avatars.com/api/?name=Mahesh+P&background=6c5ce7&color=fff&size=200"
+                            alt="Admin Photo" class="admin-photo">
+                        <div class="admin-badge">👑 OWNER</div>
+                    </div>
+                    <div class="admin-header-titles">
+                        <h2 id="admin-name-display" class="admin-name">Mahesh P</h2>
+                        <span class="admin-role-title">Gym Proprietor</span>
+                    </div>
                 </div>
 
-                <h2 id="admin-name-display" class="admin-name">Mahesh P</h2>
+                <div class="admin-stats-row">
+                    <div class="stat-pill">
+                        <span class="stat-icon">🎂</span>
+                        <span id="admin-dob-display">Oct 1990</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-icon">🚀</span>
+                        <span id="admin-since-display">Est. 2017</span>
+                    </div>
+                </div>
 
-                <div class="admin-info-grid">
-                    <div class="info-item">
-                        <span class="info-icon">🎂</span>
-                        <div class="info-content">
-                            <label>Date of Birth</label>
-                            <span id="admin-dob-display">October 1990</span>
-                        </div>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-icon">🚀</span>
-                        <div class="info-content">
-                            <label>Gym Started</label>
-                            <span id="admin-since-display">2017</span>
-                        </div>
-                    </div>
-                    <div class="info-item full-width">
-                        <span class="info-icon">🔐</span>
-                        <div class="info-content">
-                            <label>Access Level</label>
-                            <span class="access-badge">LIFETIME ACCESS</span>
-                        </div>
-                    </div>
+                <div class="admin-premium-badge">
+                    <span class="premium-icon">🛡️</span>
+                    <span class="premium-text">LIFETIME ACCESS GRANTED</span>
                 </div>
 
                 <div class="member-ids-section">
-                    <h3>🆔 Linked Member IDs</h3>
+                    <h3>🆔 Linked Device IDs</h3>
                     <div id="admin-ids-list" class="ids-list">
                         <!-- Populated by JS -->
                     </div>
                 </div>
 
                 <div class="modal-actions">
-                    <button class="btn btn-primary full-width" onclick="app.promptAdminEdit()">
-                        <span class="btn-icon">✏️</span> Edit Profile
+                    <button class="btn btn-premium full-width" onclick="app.promptAdminEdit()">
+                        <span class="btn-icon">✨</span> Customize Profile
                     </button>
                 </div>
             </div>
@@ -1091,8 +1101,17 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Photo URL</label>
-                        <input type="text" id="edit-admin-photo" class="form-input" placeholder="https://...">
+                        <label class="form-label">Profile Photo</label>
+                        <div class="admin-photo-upload-group">
+                            <input type="text" id="edit-admin-photo" class="form-input" placeholder="https://..."
+                                style="flex: 1;">
+                            <input type="file" id="admin-photo-file" style="display: none;" accept="image/*"
+                                onchange="app.handleAdminPhotoUpload(event)">
+                            <button type="button" class="btn btn-secondary btn-sm"
+                                onclick="document.getElementById('admin-photo-file').click()">
+                                📤 Upload
+                            </button>
+                        </div>
                     </div>
 
                     <div class="form-row">

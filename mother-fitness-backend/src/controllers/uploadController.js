@@ -10,40 +10,38 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-/**
- * @desc    Upload customer photo
- * @route   POST /api/upload
- * @access  Private
- */
 const uploadPhoto = asyncHandler(async (req, res, next) => {
     if (!req.file) {
-        return next(new AppError('Please upload a file', 400));
+        return next(new AppError('Please provide an image file', 400));
     }
 
-    // Generate unique filename
     const filename = `photo_${generateUniqueId()}_${Date.now()}.webp`;
     const filepath = path.join(uploadDir, filename);
 
-    // Process image with Sharp
-    await sharp(req.file.buffer)
-        .resize(500, 500, { // Resize to 500x500 square
-            fit: 'cover',
-            position: 'center'
-        })
-        .toFormat('webp')
-        .webp({ quality: 80 }) // Compress quality
-        .toFile(filepath);
+    try {
+        // Process image with Sharp
+        await sharp(req.file.buffer)
+            .resize(500, 500, { // Resize to 500x500 square
+                fit: 'cover',
+                position: 'center'
+            })
+            .toFormat('webp')
+            .webp({ quality: 80 }) // Compress quality
+            .toFile(filepath);
 
-    // Construct public URL
-    // In production, this would be a CDN URL or relative path
-    const fileUrl = `/uploads/${filename}`;
+        // Construct public URL
+        const fileUrl = `/uploads/${filename}`;
 
-    sendSuccess(res, 201, {
-        filename,
-        path: fileUrl,
-        mimetype: 'image/webp',
-        size: req.file.size // Original size, processed size will be smaller
-    }, 'Photo uploaded successfully');
+        sendSuccess(res, 201, {
+            filename,
+            path: fileUrl,
+            mimetype: 'image/webp',
+            size: req.file.size
+        }, 'Photo uploaded successfully');
+    } catch (error) {
+        console.error('Sharp/FS Error in uploadPhoto:', error);
+        return next(new AppError(`File processing failed: ${error.message}`, 500));
+    }
 });
 
 /**

@@ -49,7 +49,7 @@ async function startBackendServer() {
 
         // Start server
         return new Promise((resolve, reject) => {
-            expressServer = server.listen(PORT, '127.0.0.1', () => {
+            expressServer = server.listen(PORT, '0.0.0.0', () => {
                 logger.info(`✅ Backend server running on http://localhost:${PORT}`);
                 resolve();
             });

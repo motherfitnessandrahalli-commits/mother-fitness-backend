@@ -14,6 +14,8 @@ const getMemberTimeline = asyncHandler(async (req, res, next) => {
     sendSuccess(res, 200, { timeline });
 });
 
+const AlertService = require('../services/AlertService');
+
 /**
  * @desc    Get Business Intelligence Metrics (Business Health Score, Churn Risk, etc.)
  * @route   GET /api/intelligence/business-health
@@ -21,121 +23,102 @@ const getMemberTimeline = asyncHandler(async (req, res, next) => {
 const getBusinessHealth = asyncHandler(async (req, res, next) => {
     // 1. Basic Stats
     const totalCustomers = await Customer.countDocuments();
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const activeCustomersCount = await Customer.countDocuments({ validity: { $gte: today } });
+    const activeCustomers = await Customer.find({ validity: { $gte: today } });
+    const activeCustomersCount = activeCustomers.length;
 
-    // 2. Churn Risk (Members who haven't visited in 10+ days)
+    // 2. Churn Risk (Members who haven't visited in 10+ days) - Basic rule
     const tenDaysAgo = new Date();
     tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
 
-    // Find customers with active plan but no attendance in 10 days
-    const churnRiskMembers = await Customer.aggregate([
-        {
-            $match: {
-                validity: { $gte: today } // Active plan only
-            }
-        },
-        {
-            $lookup: {
-                from: 'attendances',
-                localField: '_id',
-                foreignField: 'customerId',
-                as: 'visits'
-            }
-        },
-        {
-            $addFields: {
-                // Use timestamp instead of createdAt
-                lastVisit: { $max: '$visits.timestamp' }
-            }
-        },
-        {
-            $match: {
-                $or: [
-                    { lastVisit: { $lt: tenDaysAgo } },
-                    { lastVisit: { $exists: false } }, // Never visited but has plan
-                    { lastVisit: null } // No visits array
-                ]
-            }
-        },
-        {
-            $project: {
-                name: 1,
-                phone: 1,
-                lastVisit: 1,
-                plan: 1,
-                memberId: 1
-            }
-        },
-        { $limit: 20 }
-    ]);
+    // 3. AGI Rule-Based Alerts (Attention List)
+    const attentionList = [];
 
-    // 3. Revenue Leakage (Expired members still visiting)
+    for (const customer of activeCustomers) {
+        // Attendance Drop Alert
+        const attAlert = await AlertService.calculateAttendanceDrop(customer._id);
+        if (attAlert) {
+            attentionList.push({
+                memberId: customer.memberId,
+                name: customer.name,
+                issue: 'Attendance Drop',
+                detail: attAlert.message,
+                severity: attAlert.severity,
+                action: attAlert.suggestedAction
+            });
+        }
+
+        // Duration Drop Alert
+        if (!attAlert) { // Avoid double flagging if attendance already dropped significantly
+            const durAlert = await AlertService.calculateDurationDrop(customer._id);
+            if (durAlert) {
+                attentionList.push({
+                    memberId: customer.memberId,
+                    name: customer.name,
+                    issue: 'Motivation Risk',
+                    detail: durAlert.message,
+                    severity: durAlert.severity,
+                    action: durAlert.suggestedAction
+                });
+            }
+        }
+    }
+
+    // 4. Revenue Leakage (Expired members still visiting)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Find expired members who have recent visits
     const revenueLeakageMembers = await Customer.aggregate([
-        {
-            $match: {
-                validity: { $lt: today } // Expired members
-            }
-        },
+        { $match: { validity: { $lt: today } } },
         {
             $lookup: {
                 from: 'attendances',
                 localField: '_id',
                 foreignField: 'customerId',
                 as: 'recentVisits',
-                pipeline: [
-                    {
-                        $match: {
-                            timestamp: { $gte: sevenDaysAgo }
-                        }
-                    }
-                ]
+                pipeline: [{ $match: { timestamp: { $gte: sevenDaysAgo } } }]
             }
         },
-        {
-            $match: {
-                'recentVisits.0': { $exists: true } // Has at least one recent visit
-            }
-        },
+        { $match: { 'recentVisits.0': { $exists: true } } },
         {
             $project: {
-                name: 1,
-                phone: 1,
-                memberId: 1,
-                validity: 1,
+                name: 1, phone: 1, memberId: 1, validity: 1,
                 visitCount: { $size: '$recentVisits' }
             }
-        },
-        { $limit: 20 }
+        }
     ]);
 
-    // 4. Gym Health Score (% of active members actually using the gym)
-    // Find members who visited in last 7 days
+    // Add leakage to attention list
+    revenueLeakageMembers.forEach(m => {
+        attentionList.push({
+            memberId: m.memberId,
+            name: m.name,
+            issue: 'Revenue Leakage',
+            detail: `Expired member visited ${m.visitCount} times this week`,
+            severity: 'CRITICAL',
+            action: 'Renew membership immediately'
+        });
+    });
+
+    // 5. Gym Health Score
     const activeVisitorsIds = await Attendance.distinct('customerId', {
         timestamp: { $gte: sevenDaysAgo }
     });
 
-    // Count how many of these visitors are ACTIVE members
     const activeVisitorsCount = await Customer.countDocuments({
         _id: { $in: activeVisitorsIds },
-        validity: { $gte: today } // Only count active members
+        validity: { $gte: today }
     });
 
-    // Calculate utilization rate: active visitors / total active members
     const utilizationRate = activeCustomersCount > 0
         ? Math.min(Math.round((activeVisitorsCount / activeCustomersCount) * 100), 100)
         : 0;
 
-    let healthStatus = 'GOOD';
-    if (utilizationRate < 40) healthStatus = 'CRITICAL';
-    else if (utilizationRate < 60) healthStatus = 'NEEDS ATTENTION';
+    let healthStatus = 'Healthy';
+    if (utilizationRate < 40) healthStatus = 'Action Required';
+    else if (utilizationRate < 60) healthStatus = 'Attention Needed';
 
     sendSuccess(res, 200, {
         health: {
@@ -145,12 +128,11 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
             totalMembers: totalCustomers,
             activeVisitors: activeVisitorsCount
         },
-        risks: {
-            churnCount: churnRiskMembers.length,
-            churnMembers: churnRiskMembers,
-            leakageCount: revenueLeakageMembers.length,
-            leakageMembers: revenueLeakageMembers
-        }
+        attentionList: attentionList.sort((a, b) => {
+            // Sort by severity: CRITICAL > WARNING > WATCH
+            const order = { 'CRITICAL': 0, 'WARNING': 1, 'WATCH': 2 };
+            return order[a.severity] - order[b.severity];
+        })
     });
 });
 
