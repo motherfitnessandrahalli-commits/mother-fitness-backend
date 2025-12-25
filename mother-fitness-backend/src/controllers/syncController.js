@@ -25,9 +25,11 @@ const syncData = asyncHandler(async (req, res, next) => {
         // with different _id values.
         const { _id, ...updateData } = data;
 
+        const updateOptions = { upsert: true };
+
         switch (type) {
             case 'customer': {
-                // Try finding by memberId first, then cloudId, then _id
+                // Try finding by memberId first, then customerId, then _id
                 const searchFilter = {
                     $or: [
                         { memberId: data.memberId },
@@ -35,7 +37,8 @@ const syncData = asyncHandler(async (req, res, next) => {
                         { _id: dataId }
                     ]
                 };
-                result = await Customer.findOneAndUpdate(searchFilter, updateData, options);
+                // Use updateOne with $set to be safer with immutable fields
+                result = await Customer.updateOne(searchFilter, { $set: updateData }, updateOptions);
                 break;
             }
 
@@ -46,7 +49,7 @@ const syncData = asyncHandler(async (req, res, next) => {
                         { _id: dataId }
                     ]
                 };
-                result = await Attendance.findOneAndUpdate(searchFilter, updateData, options);
+                result = await Attendance.updateOne(searchFilter, { $set: updateData }, updateOptions);
                 break;
             }
 
@@ -57,7 +60,7 @@ const syncData = asyncHandler(async (req, res, next) => {
                         { _id: dataId }
                     ]
                 };
-                result = await Payment.findOneAndUpdate(searchFilter, updateData, options);
+                result = await Payment.updateOne(searchFilter, { $set: updateData }, updateOptions);
                 break;
             }
 
