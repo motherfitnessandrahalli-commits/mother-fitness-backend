@@ -192,7 +192,9 @@ const getMemberPayments = asyncHandler(async (req, res, next) => {
         total,
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / limit),
-        debug_version: 'v2_fixed_casting'
+        debug_version: 'v3_debug_ids',
+        queriedId: userId,
+        dbCount: verifyCount
     });
 });
 

@@ -47,7 +47,13 @@ async function probe() {
 
         if (paymentRes.payments?.length > 0) {
             console.log('✅ PAYMENTS EXIST in API Response!');
-            console.log('First Payment:', paymentRes.payments[0]);
+            const firstPayment = paymentRes.payments[0];
+            console.log('First Payment:', firstPayment);
+
+            // 4. Try Download
+            console.log(`\n📥 Attempting to Download Receipt for ${firstPayment._id}...`);
+            await makeRequest(`/api/member/payments/${firstPayment._id}/receipt`, 'GET', null, token.token);
+            console.log('✅ Receipt Download Request Completed (Check Status below).');
         } else {
             console.log('❌ Payments List is EMPTY in API Response.');
         }
@@ -81,12 +87,32 @@ function makeRequest(path, method, body, token) {
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
                 try {
-                    const parsed = JSON.parse(data);
+                    // Don't auto-parse here, let logic inside handle it
                     if (res.statusCode >= 200 && res.statusCode < 300) {
-                        resolve(parsed.data || parsed); // Handle standard response wrap
+                        // If it's a PDF (binary), just say success
+                        if (res.headers['content-type'] === 'application/pdf') {
+                            console.log('✅ RESPONSE IS PDF! (Binary data received)');
+                            resolve({ success: true, message: 'PDF Received' });
+                        } else {
+                            try {
+                                const parsed = JSON.parse(data);
+                                resolve(parsed.data || parsed);
+                            } catch (e) {
+                                // Maybe valid text response?
+                                console.log('Response (Not JSON):', data.substring(0, 100));
+                                resolve(data);
+                            }
+                        }
                     } else {
-                        console.error(`API Error (${res.statusCode}):`, parsed);
-                        resolve(parsed); // Return anyway to see error
+                        console.error(`❌ API Error (${res.statusCode})`);
+                        try {
+                            const parsed = JSON.parse(data);
+                            console.error('Error Body:', parsed);
+                            resolve(parsed);
+                        } catch (e) {
+                            console.error('Error Body (Raw):', data);
+                            resolve(data);
+                        }
                     }
                 } catch (e) {
                     reject(e);
