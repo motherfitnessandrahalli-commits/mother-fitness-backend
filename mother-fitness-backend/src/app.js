@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const SyncService = require('./services/SyncService'); // Initialize / Connect Sync Service
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -11,6 +12,9 @@ const app = express();
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
+
+// Initialize Cloud Sync
+SyncService.init();
 
 // CORS configuration - MUST be before helmet
 app.use(cors({

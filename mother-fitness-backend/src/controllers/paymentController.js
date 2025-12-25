@@ -1,6 +1,8 @@
 const { Payment, Customer } = require('../models');
 const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler');
 const { paginate, createPaginationMeta } = require('../utils/helpers');
+const { getIO } = require('../config/socket');
+const SyncService = require('../services/SyncService');
 
 /**
  * @desc    Get all payments with filtering and pagination
@@ -171,6 +173,12 @@ const createPayment = asyncHandler(async (req, res, next) => {
 
     // Convert customer to plain object to ensure all fields are sent
     const customerData = customer.toObject();
+
+    // 🔄 CLOUD SYNC: Push Payment to Cloud DB
+    // We need the customer object for mapping
+    if (customer) {
+        SyncService.syncPayment(payment, customer).catch(err => console.error('Sync Error:', err.message));
+    }
 
     sendSuccess(res, 201, { payment, customer: customerData }, 'Payment recorded and plan updated successfully');
 });

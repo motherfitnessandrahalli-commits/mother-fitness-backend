@@ -12,5 +12,6 @@ module.exports = {
     Attendance,
     Payment,
     TimelineEvent,
-    AdminProfile
+    AdminProfile,
+    SyncQueue: require('./SyncQueue')
 };

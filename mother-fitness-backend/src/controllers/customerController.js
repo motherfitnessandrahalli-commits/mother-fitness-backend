@@ -1,6 +1,7 @@
 const { Customer, Payment } = require('../models');
 const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler');
 const { paginate, createPaginationMeta, calculatePlanValidity } = require('../utils/helpers');
+const SyncService = require('../services/SyncService');
 
 /**
  * @desc    Get all customers with filter, search, and pagination
@@ -176,6 +177,9 @@ const createCustomer = asyncHandler(async (req, res, next) => {
         console.error('Socket emit error:', error.message);
     }
 
+    // 🔄 CLOUD SYNC: Push Customer to Cloud DB (Offline Tolerant)
+    SyncService.syncMember(customer).catch(err => console.error('Sync Error:', err.message));
+
     sendSuccess(res, 201, { customer, payment }, 'Customer created successfully');
 });
 
@@ -196,6 +200,9 @@ const updateCustomer = asyncHandler(async (req, res, next) => {
         new: true,
         runValidators: true,
     });
+
+    // 🔄 CLOUD SYNC: Update Customer in Cloud DB
+    SyncService.syncMember(customer).catch(err => console.error('Sync Error:', err.message));
 
     sendSuccess(res, 200, { customer }, 'Customer updated successfully');
 });

@@ -1,4 +1,5 @@
 const Announcement = require('../models/Announcement');
+const SyncService = require('../services/SyncService');
 
 // @desc    Create new announcement
 // @route   POST /api/announcements
@@ -15,6 +16,9 @@ exports.createAnnouncement = async (req, res, next) => {
             type,
             createdBy: req.user.id
         });
+
+        // 🔄 CLOUD SYNC: Push Announcement to Cloud DB
+        SyncService.syncAnnouncement(announcement).catch(err => console.error('Sync Error:', err.message));
 
         res.status(201).json({
             success: true,
