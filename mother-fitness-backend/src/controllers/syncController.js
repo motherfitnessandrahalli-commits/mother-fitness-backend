@@ -21,6 +21,10 @@ const syncData = asyncHandler(async (req, res, next) => {
     const dataId = data._id;
 
     try {
+        // Remove _id from data to prevent "immutable field" errors when syncing to existing records
+        // with different _id values.
+        const { _id, ...updateData } = data;
+
         switch (type) {
             case 'customer': {
                 // Try finding by memberId first, then cloudId, then _id
@@ -31,7 +35,7 @@ const syncData = asyncHandler(async (req, res, next) => {
                         { _id: dataId }
                     ]
                 };
-                result = await Customer.findOneAndUpdate(searchFilter, data, options);
+                result = await Customer.findOneAndUpdate(searchFilter, updateData, options);
                 break;
             }
 
@@ -42,7 +46,7 @@ const syncData = asyncHandler(async (req, res, next) => {
                         { _id: dataId }
                     ]
                 };
-                result = await Attendance.findOneAndUpdate(searchFilter, data, options);
+                result = await Attendance.findOneAndUpdate(searchFilter, updateData, options);
                 break;
             }
 
@@ -53,7 +57,7 @@ const syncData = asyncHandler(async (req, res, next) => {
                         { _id: dataId }
                     ]
                 };
-                result = await Payment.findOneAndUpdate(searchFilter, data, options);
+                result = await Payment.findOneAndUpdate(searchFilter, updateData, options);
                 break;
             }
 
