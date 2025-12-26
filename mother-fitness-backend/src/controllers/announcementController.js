@@ -83,6 +83,9 @@ exports.deleteAnnouncement = async (req, res, next) => {
             });
         }
 
+        // 🔄 CLOUD SYNC: Delete from Cloud DB
+        SyncService.syncAnnouncementDelete(announcement._id).catch(err => console.error('Sync Error:', err.message));
+
         await announcement.deleteOne();
 
         res.status(200).json({

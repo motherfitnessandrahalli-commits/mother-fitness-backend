@@ -188,7 +188,7 @@ class SyncService {
             }
         }
 
-        await this._addToQueue('create_payment', payload);
+        await this._addToQueue('CREATE_PAYMENT', payload);
     }
 
     /**
@@ -217,6 +217,24 @@ class SyncService {
         }
 
         await this._addToQueue('CREATE_ANNOUNCEMENT', payload);
+    }
+
+    /**
+     * Delete Announcement from Cloud
+     * @param {string} localId 
+     */
+    async syncAnnouncementDelete(localId) {
+        if (this.isConnected) {
+            try {
+                await this.cloudAnnouncement.deleteOne({ localId: localId.toString() });
+                console.log(`☁️ SyncService: Announcement ${localId} deleted from cloud.`);
+                return;
+            } catch (error) {
+                console.error('⚠️ Cloud Deletion Failed, queuing:', error.message);
+            }
+        }
+
+        await this._addToQueue('DELETE_ANNOUNCEMENT', { localId: localId.toString() });
     }
 
 
@@ -286,10 +304,12 @@ class SyncService {
                 try {
                     if (item.operation === 'CREATE_MEMBER' || item.operation === 'UPDATE_MEMBER') {
                         await this._pushMemberToCloud(item.payload);
-                    } else if (item.operation === 'create_payment') {
+                    } else if (item.operation === 'CREATE_PAYMENT' || item.operation === 'create_payment') {
                         await this._pushPaymentToCloud(item.payload);
                     } else if (item.operation === 'CREATE_ANNOUNCEMENT') {
                         await this._pushAnnouncementToCloud(item.payload);
+                    } else if (item.operation === 'DELETE_ANNOUNCEMENT') {
+                        await this.cloudAnnouncement.deleteOne({ localId: item.payload.localId });
                     }
 
                     item.status = 'completed'; // Or delete
