@@ -8,6 +8,9 @@ class MemberApp {
     }
 
     init() {
+        // Data Consistency Protocol: Clear local data to ensure fresh sync
+        localStorage.removeItem('member_cache'); // Clear any sticky data
+
         // Redirect if not logged in
         if (!this.api.token) {
             window.location.href = './index.html';
@@ -55,10 +58,13 @@ class MemberApp {
             const response = await this.api.getProfile();
             this.memberProfile = response.data.customer;
 
+            // Debug Data Integrity
+            console.log('PLAN RECEIVED:', this.memberProfile.plan);
+
             // Update member info
             document.getElementById('memberName').textContent = this.memberProfile.name;
             document.getElementById('memberId').textContent = this.memberProfile.memberId;
-            document.getElementById('planType').textContent = this.memberProfile.plan;
+            document.getElementById('planType').textContent = this.memberProfile.planName || this.memberProfile.plan; // Use Virtual or Fallback
 
             // Update member avatar with photo if available
             const avatarDiv = document.querySelector('.member-avatar');

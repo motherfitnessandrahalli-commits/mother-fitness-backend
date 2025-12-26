@@ -28,7 +28,9 @@ class SyncService {
             const customerSchema = new mongoose.Schema({
                 memberId: String, name: String, email: String, phone: String,
                 password: String, gender: String, joinDate: Date,
-                membershipStatus: String, planType: String, endDate: Date
+                password: String, gender: String, joinDate: Date,
+                membershipStatus: String, planType: String, plan: Object, // Added Plan Object support
+                endDate: Date
             }, { strict: false, timestamps: true }); // Strict false allows other fields if needed, but we control what we send
 
             const paymentSchema = new mongoose.Schema({
@@ -143,7 +145,9 @@ class SyncService {
             gender: memberData.gender,
             joinDate: memberData.joinDate || memberData.createdAt,
             membershipStatus: memberData.membershipStatus || 'active',
-            planType: memberData.plan || memberData.planType,
+            // Plan Logic: Support both New Object and Old String
+            plan: memberData.plan,
+            planType: (memberData.plan && memberData.plan.name) ? memberData.plan.name : (memberData.plan || memberData.planType),
             endDate: memberData.validity || memberData.endDate,
             balance: memberData.balance || 0
             // Explicitly NO PHOTO

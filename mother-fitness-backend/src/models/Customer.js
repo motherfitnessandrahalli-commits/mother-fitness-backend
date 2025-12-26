@@ -32,12 +32,8 @@ const customerSchema = new mongoose.Schema({
         trim: true,
     },
     plan: {
-        type: String,
-        required: [true, 'Plan type is required'],
-        enum: {
-            values: ['Monthly', 'Quarterly', 'Half-Yearly', 'Yearly'],
-            message: '{VALUE} is not a valid plan type',
-        },
+        type: mongoose.Schema.Types.Mixed, // Object (new) or String (legacy)
+        required: [true, 'Plan details are required'],
     },
     validity: {
         type: Date,
@@ -131,6 +127,14 @@ customerSchema.virtual('daysRemaining').get(function () {
 
     const diffTime = validityDate - today;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+});
+
+// Virtual field for Plan Name (Safe Access)
+customerSchema.virtual('planName').get(function () {
+    if (this.plan && this.plan.name) {
+        return this.plan.name;
+    }
+    return this.plan; // Fallback for string
 });
 
 // Ensure virtuals are included in JSON

@@ -3,6 +3,7 @@ const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler')
 const { paginate, createPaginationMeta, calculatePlanValidity } = require('../utils/helpers');
 const SyncService = require('../services/SyncService');
 const timeline = require('../services/TimelineService');
+const { getPlan } = require('../config/plans');
 
 /**
  * @desc    Get all customers with filter, search, and pagination
@@ -34,7 +35,8 @@ const getCustomers = asyncHandler(async (req, res, next) => {
 
     // Filter by plan
     if (plan) {
-        query.plan = plan;
+        // Match plan.name for object structure
+        query['plan.name'] = plan;
     }
 
     // Filter by status (requires special handling due to virtual field)
@@ -68,7 +70,11 @@ const getCustomers = asyncHandler(async (req, res, next) => {
 
     // Sorting
     const sort = {};
-    sort[sortBy] = order === 'asc' ? 1 : -1;
+    if (sortBy === 'plan') {
+        sort['plan.name'] = order === 'asc' ? 1 : -1;
+    } else {
+        sort[sortBy] = order === 'asc' ? 1 : -1;
+    }
 
     // Execute query
     const customers = await Customer.find(query)
@@ -109,10 +115,14 @@ const getCustomer = asyncHandler(async (req, res, next) => {
 const createCustomer = asyncHandler(async (req, res, next) => {
     const { name, age, email, phone, plan, balance, notes, photo, validity, memberId, password, isFirstLogin, initialPayment } = req.body;
 
+    // Resolve Plan Object (Critical Fix for Plan Mismatch)
+    const planDetails = getPlan(plan); // Returns object { id, name, durationDays, amount }
+
     // Calculate validity if not provided
     let validityDate = validity;
     if (!validityDate) {
-        validityDate = calculatePlanValidity(plan);
+        validityDate = new Date();
+        validityDate.setDate(validityDate.getDate() + planDetails.durationDays);
     }
 
     const customer = await Customer.create({
@@ -120,7 +130,7 @@ const createCustomer = asyncHandler(async (req, res, next) => {
         age,
         email,
         phone,
-        plan,
+        plan: planDetails, // Store as Object
         balance,
         validity: validityDate,
         notes,
@@ -136,7 +146,7 @@ const createCustomer = asyncHandler(async (req, res, next) => {
         customer._id,
         'JOINED',
         'Joined Mother Fitness Gym',
-        `Registered for ${customer.plan} plan starting today.`
+        `Registered for ${customer.plan.name} plan starting today.`
     );
 
     let payment = null;
@@ -156,7 +166,7 @@ const createCustomer = asyncHandler(async (req, res, next) => {
             payment = await Payment.create({
                 customerId: customer._id,
                 customerName: customer.name,
-                planType: customer.plan,
+                planType: customer.plan.name, // Payment model uses String
                 amount: paidAmount, // The amount actually paid now
                 totalAmount: totalAmount,
                 paidAmount: paidAmount,
@@ -222,6 +232,15 @@ const updateCustomer = asyncHandler(async (req, res, next) => {
 
     if (!customer) {
         return next(new AppError('Customer not found', 404));
+    }
+
+    // Resolve Plan if being updated
+    if (req.body.plan) {
+        req.body.plan = getPlan(req.body.plan);
+
+        // If validity not provided with plan change, recalculate? 
+        // Strategy: Let admin specify validity or keep old unless explicit.
+        // Assuming admin UI sends validity if plan changes.
     }
 
     // Update fields
