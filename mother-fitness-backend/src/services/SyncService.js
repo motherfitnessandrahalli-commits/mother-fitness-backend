@@ -33,6 +33,7 @@ class SyncService {
 
             const paymentSchema = new mongoose.Schema({
                 localPaymentId: { type: String, unique: true }, // Deduplication key
+                paymentId: String, // Cloud unique ID
                 memberId: String, // Linkage by ID string (U001, etc)
                 customerName: String, amount: Number, paymentDate: Date,
                 paymentMethod: String, planType: String, status: String,
@@ -167,6 +168,7 @@ class SyncService {
     async syncPayment(paymentData, memberData) {
         const payload = {
             localPaymentId: paymentData._id,
+            paymentId: paymentData.paymentId, // Map the unique human-readable ID
             memberId: memberData.memberId.toString().toUpperCase().trim(), // Key to find cloud user
             amount: paymentData.amount,
             paymentDate: paymentData.paymentDate,
@@ -240,8 +242,9 @@ class SyncService {
         const filter = { localPaymentId: payload.localPaymentId.toString() };
         const update = {
             localPaymentId: payload.localPaymentId.toString(),
+            paymentId: payload.paymentId, // Ensure unique paymentId lands in cloud
             memberId: normalizedMemberId, // Store memberId directly in payment for easier lookups
-            customerId: cloudUser._id, // Keep customerId for legacy but memberId is primary lookup
+            customerId: cloudUser._id.toString(), // MUST be string for cloud API transport
             customerName: payload.customerName,
             amount: payload.amount,
             paymentDate: payload.paymentDate,

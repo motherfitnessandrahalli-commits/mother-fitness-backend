@@ -179,6 +179,18 @@ const createCustomer = asyncHandler(async (req, res, next) => {
 
     // 🔄 CLOUD SYNC: Push Customer to Cloud DB
     console.log(`☁️ Initiating cloud sync for new member: ${customer.memberId}`);
+
+    // Log to timeline
+    const timeline = require('../services/TimelineService');
+    const paymentStatus = (balance > 0) ? 'Pending' : 'Completed';
+    await timeline.logEvent(
+        customer._id,
+        'JOINED',
+        `Member Joined - [${paymentStatus}] Initial Payment of ₹${initialPayment ? initialPayment.amount : 0}`,
+        `Paid via ${initialPayment ? initialPayment.paymentMethod : 'N/A'}. Plan: ${customer.plan}. Balance: ₹${customer.balance}`,
+        { status: (balance > 0) ? 'pending' : 'completed' }
+    );
+
     SyncService.syncMember(customer).then(async () => {
         if (payment) {
             console.log(`☁️ Initiating cloud sync for initial payment: ${customer.memberId}`);

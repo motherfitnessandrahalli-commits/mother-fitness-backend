@@ -155,11 +155,13 @@ const createPayment = asyncHandler(async (req, res, next) => {
 
     // Log payment events to timeline
     const timeline = require('../services/TimelineService');
+    const paymentStatusText = (customer.balance > 0) ? 'Pending' : 'Completed';
     await timeline.logEvent(
         customerId,
         'PAYMENT',
-        `Payment of ₹${amount} Received`,
-        `Paid via ${paymentMethod} for ${planType} plan.`
+        `[${paymentStatusText}] Payment of ₹${amount} Received`,
+        `Paid via ${paymentMethod} for ${planType} plan. Current Balance: ₹${customer.balance}`,
+        { status: (customer.balance > 0) ? 'pending' : 'completed' }
     );
 
     // If it's a plan renewal (already handled in validity logic above)
