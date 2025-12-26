@@ -1890,7 +1890,8 @@ class GymApp {
             planType: document.getElementById('payment-plan').value,
             receiptNumber: document.getElementById('payment-receipt').value,
             notes: document.getElementById('payment-notes').value,
-            status: 'completed'
+            status: 'completed',
+            newBalance: document.getElementById('payment-new-balance').value
         };
 
         try {

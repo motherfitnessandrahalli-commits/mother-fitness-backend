@@ -177,8 +177,14 @@ const createCustomer = asyncHandler(async (req, res, next) => {
         console.error('Socket emit error:', error.message);
     }
 
-    // 🔄 CLOUD SYNC: Push Customer to Cloud DB (Offline Tolerant)
-    SyncService.syncMember(customer).catch(err => console.error('Sync Error:', err.message));
+    // 🔄 CLOUD SYNC: Push Customer to Cloud DB
+    console.log(`☁️ Initiating cloud sync for new member: ${customer.memberId}`);
+    SyncService.syncMember(customer).then(async () => {
+        if (payment) {
+            console.log(`☁️ Initiating cloud sync for initial payment: ${customer.memberId}`);
+            await SyncService.syncPayment(payment, customer);
+        }
+    }).catch(err => console.error('Sync Error:', err.message));
 
     sendSuccess(res, 201, { customer, payment }, 'Customer created successfully');
 });

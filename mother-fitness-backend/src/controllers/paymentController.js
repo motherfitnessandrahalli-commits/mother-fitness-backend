@@ -119,13 +119,16 @@ const createPayment = asyncHandler(async (req, res, next) => {
             endDate.setMonth(endDate.getMonth() + 1); // Default to monthly
     }
 
-    // Update customer plan and validity
+    // Update customer plan, validity and balance
     customer.plan = planType;
     customer.validity = endDate;
 
-    // Update balance if provided
-    if (balance !== undefined && balance !== '') {
-        customer.balance = balance;
+    const { newBalance } = req.body;
+    if (newBalance !== undefined && newBalance !== '') {
+        customer.balance = Number(newBalance);
+    } else if (balance !== undefined && balance !== '') {
+        // Fallback to legacy balance field if newBalance is missing
+        customer.balance = Number(balance);
     }
 
     await customer.save();
@@ -139,10 +142,16 @@ const createPayment = asyncHandler(async (req, res, next) => {
         paymentMethod,
         receiptNumber,
         planType,
-        status: (balance > 0) ? 'pending' : (status || 'completed'),
+        status: (customer.balance > 0) ? 'pending' : (status || 'completed'),
         notes,
         addedBy: req.user.id,
     });
+
+    // 🔄 CLOUD SYNC: Push Payment to Cloud
+    const SyncService = require('../services/SyncService');
+    SyncService.syncPayment(payment, customer).catch(err =>
+        console.error(`☁️ Sync Error (Payment ${payment._id}):`, err.message)
+    );
 
     // Log payment events to timeline
     const timeline = require('../services/TimelineService');

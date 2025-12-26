@@ -846,13 +846,24 @@
                     </div>
                     <div class="form-group payment-form-group">
                         <label class="payment-label">
-                            <span class="payment-label-icon">⚠️</span>
-                            Current Balance (₹)
+                            <span class="payment-label-icon">💰</span>
+                            Previous Balance (₹)
                         </label>
                         <div class="payment-input-wrapper">
                             <input type="number" id="payment-current-balance"
                                 class="payment-input payment-input-readonly" readonly value="0">
                         </div>
+                    </div>
+                </div>
+
+                <div class="form-group payment-form-group">
+                    <label class="payment-label">
+                        <span class="payment-label-icon">⚠️</span>
+                        New Balance (₹)
+                    </label>
+                    <div class="payment-input-wrapper">
+                        <input type="number" id="payment-new-balance" class="payment-input" value="0" min="0"
+                            placeholder="Enter new balance if any">
                     </div>
                 </div>
 

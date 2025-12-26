@@ -32,7 +32,8 @@ class SyncService {
             }, { strict: false, timestamps: true }); // Strict false allows other fields if needed, but we control what we send
 
             const paymentSchema = new mongoose.Schema({
-                customerId: mongoose.Schema.Types.ObjectId, // Cloud User ID
+                localPaymentId: { type: String, unique: true }, // Deduplication key
+                memberId: String, // Linkage by ID string (U001, etc)
                 customerName: String, amount: Number, paymentDate: Date,
                 paymentMethod: String, planType: String, status: String,
                 debug_source: String
@@ -131,16 +132,16 @@ class SyncService {
      */
     async syncMember(memberData) {
         const payload = {
-            memberId: memberData.memberId,
+            memberId: memberData.memberId.toString().toUpperCase().trim(),
             name: memberData.name,
             email: memberData.email,
             phone: memberData.phone,
             password: memberData.password, // Encrypted
             gender: memberData.gender,
-            joinDate: memberData.joinDate,
-            membershipStatus: memberData.membershipStatus,
+            joinDate: memberData.joinDate || memberData.createdAt,
+            membershipStatus: memberData.membershipStatus || 'active',
             planType: memberData.plan || memberData.planType,
-            endDate: memberData.endDate,
+            endDate: memberData.validity || memberData.endDate,
             balance: memberData.balance || 0
             // Explicitly NO PHOTO
         };
@@ -166,7 +167,7 @@ class SyncService {
     async syncPayment(paymentData, memberData) {
         const payload = {
             localPaymentId: paymentData._id,
-            memberId: memberData.memberId, // Key to find cloud user
+            memberId: memberData.memberId.toString().toUpperCase().trim(), // Key to find cloud user
             amount: paymentData.amount,
             paymentDate: paymentData.paymentDate,
             paymentMethod: paymentData.paymentMethod,
@@ -228,26 +229,29 @@ class SyncService {
     }
 
     async _pushPaymentToCloud(payload) {
-        // 1. Find Cloud Customer ID
+        // 1. Verify Cloud Customer exists (Normalized)
         const normalizedMemberId = payload.memberId.toString().toUpperCase().trim();
         const cloudUser = await this.cloudCustomer.findOne({ memberId: normalizedMemberId });
         if (!cloudUser) {
             throw new Error(`Cloud user not found for ${payload.memberId} (Deferring payment sync)`);
         }
 
-        // 2. Insert Payment
-        // Check duplicate by some unique key if possible, mostly just insert
-        // Using localPaymentId as a key in notes or meta? For now just insert.
-        await this.cloudPayment.create({
-            customerId: cloudUser._id,
+        // 2. Upsert Payment by localPaymentId
+        const filter = { localPaymentId: payload.localPaymentId.toString() };
+        const update = {
+            localPaymentId: payload.localPaymentId.toString(),
+            memberId: normalizedMemberId, // Store memberId directly in payment for easier lookups
+            customerId: cloudUser._id, // Keep customerId for legacy but memberId is primary lookup
             customerName: payload.customerName,
             amount: payload.amount,
             paymentDate: payload.paymentDate,
             paymentMethod: payload.paymentMethod,
             planType: payload.planType,
             status: payload.status,
-            debug_source: 'SYNC_SERVICE'
-        });
+            debug_source: 'SYNC_SERVICE_V3'
+        };
+
+        await this.cloudPayment.findOneAndUpdate(filter, update, { upsert: true, new: true });
     }
 
     async _pushAnnouncementToCloud(payload) {
