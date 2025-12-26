@@ -134,16 +134,29 @@ const createPayment = asyncHandler(async (req, res, next) => {
 
     await customer.save();
 
+    // Calculate financial state Snapshot
+    const currentPaid = Number(amount);
+    const remainingBalance = Number(customer.balance);
+    const totalSnapshot = currentPaid + remainingBalance;
+
+    let paymentStatus = 'paid';
+    if (remainingBalance > 0) {
+        paymentStatus = 'partial';
+    }
+
     // Create payment
     const payment = await Payment.create({
         customerId,
         customerName: customer.name,
-        amount,
+        amount: currentPaid,
+        totalAmount: totalSnapshot,
+        paidAmount: currentPaid,
+        balance: remainingBalance,
         paymentDate: paymentDate || new Date(),
         paymentMethod,
         receiptNumber,
         planType,
-        status: (customer.balance > 0) ? 'pending' : (status || 'completed'),
+        status: paymentStatus,
         notes,
         addedBy: req.user.id,
     });

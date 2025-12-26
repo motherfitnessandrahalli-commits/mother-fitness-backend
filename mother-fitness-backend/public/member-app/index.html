@@ -86,7 +86,15 @@
                 // Redirect to dashboard
                 window.location.href = './dashboard.html';
             } catch (error) {
-                errorDiv.textContent = error.message || 'Login failed. Please check your credentials.';
+                // Smart Error Handling for Hybrid Sync
+                let msg = error.message || 'Login failed.';
+
+                // If it looks like a valid Member ID (starts with U) but failed, suggest syncing
+                if (memberId.toUpperCase().startsWith('U') && (msg.includes('Invalid') || msg.includes('not found'))) {
+                    msg = `Login failed. <br><br><small>If you just joined, your account might still be <b>syncing</b>.<br>Please try again in 1 minute.</small>`;
+                }
+
+                errorDiv.innerHTML = msg;
                 errorDiv.style.display = 'block';
 
                 // Reset button

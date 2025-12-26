@@ -1955,3 +1955,14 @@ body.dark-mode .payment-item {
     }
 }
 
+/* Partial/Paid Status Badges */
+.badge-partial {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.badge-paid {
+    background: #d4edda;
+    color: #155724;
+}
+

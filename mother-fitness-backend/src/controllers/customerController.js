@@ -141,18 +141,30 @@ const createCustomer = asyncHandler(async (req, res, next) => {
 
     let payment = null;
 
-    // Handle Initial Payment
-    if (initialPayment && initialPayment.amount) {
+    // Handle Initial Payment / Obligation Record
+    // Logic: If there is ANY total amount (Paid + Balance), we must create a record.
+    const paidAmount = (initialPayment && initialPayment.amount) ? Number(initialPayment.amount) : 0;
+    const currentBalance = balance ? Number(balance) : 0;
+    const totalAmount = paidAmount + currentBalance;
+
+    if (totalAmount > 0) {
         try {
+            let status = 'paid';
+            if (paidAmount === 0) status = 'pending';
+            else if (paidAmount < totalAmount) status = 'partial';
+
             payment = await Payment.create({
                 customerId: customer._id,
                 customerName: customer.name,
                 planType: customer.plan,
-                amount: initialPayment.amount,
-                paymentMethod: initialPayment.paymentMethod || 'Cash',
-                receiptNumber: initialPayment.receiptNumber,
+                amount: paidAmount, // The amount actually paid now
+                totalAmount: totalAmount,
+                paidAmount: paidAmount,
+                balance: currentBalance,
+                paymentMethod: (initialPayment && initialPayment.paymentMethod) ? initialPayment.paymentMethod : 'Cash',
+                receiptNumber: (initialPayment && initialPayment.receiptNumber) ? initialPayment.receiptNumber : '',
                 paymentDate: new Date(),
-                status: (balance > 0) ? 'pending' : 'completed',
+                status: status,
                 addedBy: req.user.id
             });
         } catch (error) {

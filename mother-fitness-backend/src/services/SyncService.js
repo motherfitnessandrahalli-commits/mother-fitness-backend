@@ -51,7 +51,8 @@ class SyncService {
             this.cloudAnnouncement = this.cloudConnection.model('Announcement', announcementSchema);
 
             // Start Queue Processor
-            setInterval(() => this.processQueue(), 60000); // Check queue every minute
+            // Start Queue Processor
+            setInterval(() => this.processQueue(), 5000); // Check queue every 5 seconds (Battle-Tested Rule)
 
             // Start Cloud Polling (B -> A Sync)
             setInterval(() => this.pollCloudUpdates(), 5 * 60 * 1000); // Check cloud updates every 5 mins
@@ -176,7 +177,11 @@ class SyncService {
             paymentMethod: paymentData.paymentMethod,
             planType: paymentData.planType,
             status: paymentData.status,
-            customerName: memberData.name
+            customerName: memberData.name,
+            // New Sync Fields
+            totalAmount: paymentData.totalAmount || 0,
+            paidAmount: paymentData.paidAmount || 0,
+            balance: paymentData.balance || 0
         };
 
         if (this.isConnected) {
@@ -342,6 +347,9 @@ class SyncService {
             paymentMethod: payload.paymentMethod,
             planType: payload.planType,
             status: payload.status,
+            totalAmount: payload.totalAmount,
+            paidAmount: payload.paidAmount,
+            balance: payload.balance,
             debug_source: 'SYNC_SERVICE_V3'
         };
 

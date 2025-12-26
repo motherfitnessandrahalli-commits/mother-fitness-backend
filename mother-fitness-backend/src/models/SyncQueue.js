@@ -4,7 +4,7 @@ const syncQueueSchema = new mongoose.Schema({
     operation: {
         type: String,
         required: true,
-        enum: ['CREATE_MEMBER', 'UPDATE_MEMBER', 'create_payment', 'CREATE_ANNOUNCEMENT', 'UPDATE_ANNOUNCEMENT', 'DELETE_ANNOUNCEMENT'] // Standardized codes
+        enum: ['CREATE_MEMBER', 'UPDATE_MEMBER', 'CREATE_PAYMENT', 'UPDATE_PAYMENT', 'create_payment', 'CREATE_ANNOUNCEMENT', 'UPDATE_ANNOUNCEMENT', 'DELETE_ANNOUNCEMENT'] // Standardized codes
     },
     payload: {
         type: Object, // The data to sync (cleaned of heavy fields)

@@ -21,6 +21,19 @@ const paymentSchema = new mongoose.Schema({
         required: [true, 'Payment amount is required'],
         min: [0, 'Amount cannot be negative'],
     },
+    // New fields for Partial/Pending state logic
+    totalAmount: {
+        type: Number,
+        default: 0
+    },
+    paidAmount: {
+        type: Number,
+        default: 0
+    },
+    balance: {
+        type: Number,
+        default: 0
+    },
     paymentDate: {
         type: Date,
         required: [true, 'Payment date is required'],
@@ -47,7 +60,7 @@ const paymentSchema = new mongoose.Schema({
     status: {
         type: String,
         required: true,
-        enum: ['completed', 'pending', 'failed'],
+        enum: ['completed', 'pending', 'failed', 'partial', 'paid'], // Added 'partial', 'paid'
         default: 'completed',
     },
     notes: {

@@ -69,14 +69,25 @@
                     return;
                 }
 
-                payments.forEach(payment => {
+                    payments.forEach(payment => {
                     const date = new Date(payment.paymentDate);
+                    
+                    let statusBadge = '';
+                    let statusClass = 'badge-completed';
+                    if (payment.status === 'pending') statusClass = 'badge-pending';
+                    else if (payment.status === 'partial') statusClass = 'badge-partial';
+                    else if (payment.status === 'failed') statusClass = 'badge-failed';
+                    else if (payment.status === 'paid') statusClass = 'badge-paid';
+                    
+                    const statusText = payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
+                    statusBadge = `<span class="item-badge ${statusClass}">${statusText}</span>`;
+
                     const div = document.createElement('div');
                     div.className = 'list-item payment-item';
                     div.innerHTML = `
                         <div class="item-icon">💳</div>
                         <div class="item-content">
-                            <p class="item-title">₹${payment.amount} - ${payment.planType}</p>
+                            <p class="item-title">₹${payment.amount} - ${payment.planType} ${statusBadge}</p>
                             <p class="item-subtitle">${date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                             <p class="item-meta">${payment.paymentMethod} ${payment.receiptNumber ? `• Receipt: ${payment.receiptNumber}` : ''}</p>
                         </div>
