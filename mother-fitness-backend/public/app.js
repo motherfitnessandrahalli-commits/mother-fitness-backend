@@ -4,7 +4,7 @@
 
 // Customer Data Model
 class Customer {
-    constructor(id, name, age, email, phone, plan, validity, notes = '', photo = '', createdAt = new Date(), memberId = '') {
+    constructor(id, name, age, email, phone, plan, validity, notes = '', photo = '', createdAt = new Date(), memberId = '', balance = 0) {
         this.id = id;
         this.name = name;
         this.age = age;
@@ -16,6 +16,7 @@ class Customer {
         this.photo = photo;
         this.createdAt = createdAt;
         this.memberId = memberId;
+        this.balance = balance;
     }
 
     getStatus() {
@@ -1248,7 +1249,8 @@ class GymApp {
                 c.notes,
                 c.photo || '',
                 new Date(c.createdAt),
-                c.memberId
+                c.memberId,
+                c.balance || 0
             ));
 
             this.render();
@@ -1282,7 +1284,8 @@ class GymApp {
             photo: this.currentPhoto,
             memberId: customerData.memberId || '', // Use custom ID if provided
             password: password,
-            isFirstLogin: true
+            isFirstLogin: true,
+            balance: customerData.balance || 0
         };
 
         // Add Initial Payment if provided
@@ -1306,7 +1309,8 @@ class GymApp {
                 c.notes,
                 c.photo || '',
                 new Date(c.createdAt),
-                c.memberId
+                c.memberId,
+                c.balance || 0
             );
 
             this.customers.push(newCustomer);
@@ -1339,7 +1343,8 @@ class GymApp {
                 plan: customerData.plan,
                 validity: customerData.validity,
                 notes: customerData.notes,
-                memberId: customerData.memberId || ''
+                memberId: customerData.memberId || '',
+                balance: customerData.balance || 0
             };
 
             if (this.currentPhoto) {
@@ -2476,6 +2481,7 @@ class GymApp {
                 document.getElementById('customer-validity').value = customer.validity;
                 document.getElementById('customer-notes').value = customer.notes;
                 document.getElementById('customer-member-id').value = customer.memberId || '';
+                document.getElementById('customer-balance').value = customer.balance || 0;
 
                 if (customer.photo) {
                     this.currentPhoto = customer.photo;
@@ -2500,6 +2506,7 @@ class GymApp {
                 document.getElementById('initial-payment-amount').value = '';
                 document.getElementById('initial-payment-method').value = 'Cash';
                 document.getElementById('initial-payment-receipt').value = '';
+                document.getElementById('customer-balance').value = 0;
             }
 
             // Set default validity to 1 month from today
@@ -2540,8 +2547,8 @@ class GymApp {
             plan: document.getElementById('customer-plan').value,
             validity: document.getElementById('customer-validity').value,
             notes: document.getElementById('customer-notes').value.trim(),
-            notes: document.getElementById('customer-notes').value.trim(),
-            memberId: document.getElementById('customer-member-id').value.trim()
+            memberId: document.getElementById('customer-member-id').value.trim(),
+            balance: parseFloat(document.getElementById('customer-balance').value) || 0
         };
 
         // Capture Initial Payment Data (Only for new customers)
@@ -3056,6 +3063,12 @@ class GymApp {
                     <div class="customer-detail">
                         <span class="detail-icon">📅</span>
                         <span>Valid until ${validityDate}</span>
+                    </div>
+                    <div class="customer-detail">
+                        <span class="detail-icon">💰</span>
+                        <span style="color: ${customer.balance > 0 ? '#FF6B6B' : '#4ECDC4'}; font-weight: bold;">
+                            Balance: ₹${customer.balance || 0}
+                        </span>
                     </div>
                     ${customer.notes ? `
                     <div class="customer-detail">
