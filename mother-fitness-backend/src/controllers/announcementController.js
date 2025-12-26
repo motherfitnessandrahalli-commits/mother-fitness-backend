@@ -55,6 +55,7 @@ exports.getActiveAnnouncements = async (req, res, next) => {
 
         const announcements = await Announcement.find({
             isActive: true,
+            isDeleted: false, // ✅ NEVER return deleted announcements
             startDate: { $lte: now },
             endDate: { $gte: now }
         }).sort({ createdAt: -1 });
@@ -83,10 +84,13 @@ exports.deleteAnnouncement = async (req, res, next) => {
             });
         }
 
+        // ✅ SOFT DELETE: Mark as deleted instead of removing
+        announcement.isDeleted = true;
+        announcement.deletedAt = new Date();
+        await announcement.save();
+
         // 🔄 CLOUD SYNC: Delete from Cloud DB
         SyncService.syncAnnouncementDelete(announcement._id).catch(err => console.error('Sync Error:', err.message));
-
-        await announcement.deleteOne();
 
         res.status(200).json({
             success: true,

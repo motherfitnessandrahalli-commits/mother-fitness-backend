@@ -42,7 +42,8 @@ class SyncService {
 
             const announcementSchema = new mongoose.Schema({
                 title: String, message: String, type: String,
-                startDate: Date, endDate: Date, isActive: Boolean
+                startDate: Date, endDate: Date, isActive: Boolean,
+                localId: String, isDeleted: Boolean, deletedAt: Date
             }, { strict: false, timestamps: true });
 
             this.cloudCustomer = this.cloudConnection.model('Customer', customerSchema);
@@ -220,21 +221,93 @@ class SyncService {
     }
 
     /**
-     * Delete Announcement from Cloud
+     * Delete Announcement from Cloud (Soft Delete)
      * @param {string} localId 
      */
     async syncAnnouncementDelete(localId) {
+        const payload = {
+            localId: localId.toString(),
+            isDeleted: true,
+            deletedAt: new Date()
+        };
+
         if (this.isConnected) {
             try {
-                await this.cloudAnnouncement.deleteOne({ localId: localId.toString() });
-                console.log(`☁️ SyncService: Announcement ${localId} deleted from cloud.`);
+                // ✅ Use soft delete in cloud (update, not delete)
+                await this.cloudAnnouncement.updateOne(
+                    { localId: localId.toString() },
+                    { $set: { isDeleted: true, deletedAt: new Date() } }
+                );
+                console.log(`☁️ SyncService: Announcement ${localId} soft-deleted from cloud.`);
                 return;
             } catch (error) {
                 console.error('⚠️ Cloud Deletion Failed, queuing:', error.message);
             }
         }
 
-        await this._addToQueue('DELETE_ANNOUNCEMENT', { localId: localId.toString() });
+        await this._addToQueue('DELETE_ANNOUNCEMENT', payload);
+    }
+
+    /**
+     * Update Announcement in Cloud
+     * @param {Object} announcementData 
+     */
+    async syncAnnouncementUpdate(announcementData) {
+        const payload = {
+            localId: announcementData._id.toString(),
+            title: announcementData.title,
+            message: announcementData.message,
+            type: announcementData.type,
+            startDate: announcementData.startDate,
+            endDate: announcementData.endDate,
+            isActive: announcementData.isActive,
+            isDeleted: announcementData.isDeleted || false
+        };
+
+        if (this.isConnected) {
+            try {
+                await this.cloudAnnouncement.updateOne(
+                    { localId: payload.localId },
+                    { $set: payload },
+                    { upsert: false }
+                );
+                console.log(`☁️ SyncService: Announcement '${payload.title}' updated in cloud.`);
+                return;
+            } catch (error) {
+                console.error('⚠️ Cloud Update Failed, queuing:', error.message);
+            }
+        }
+
+        await this._addToQueue('UPDATE_ANNOUNCEMENT', payload);
+    }
+
+    /**
+     * Update Payment in Cloud
+     * @param {Object} paymentData 
+     * @param {Object} memberData 
+     */
+    async syncPaymentUpdate(paymentData, memberData) {
+        const payload = {
+            localId: paymentData._id.toString(),
+            localMemberId: memberData._id,
+            amount: paymentData.amount,
+            paymentDate: paymentData.paymentDate,
+            status: paymentData.status,
+            paymentMethod: paymentData.paymentMethod,
+            receiptNumber: paymentData.receiptNumber
+        };
+
+        if (this.isConnected) {
+            try {
+                await this._pushPaymentToCloud(payload);
+                console.log(`☁️ SyncService: Payment ${payload.localId} updated in cloud.`);
+                return;
+            } catch (error) {
+                console.error('⚠️ Payment Update Failed, queuing:', error.message);
+            }
+        }
+
+        await this._addToQueue('UPDATE_PAYMENT', payload);
     }
 
 
@@ -306,10 +379,22 @@ class SyncService {
                         await this._pushMemberToCloud(item.payload);
                     } else if (item.operation === 'CREATE_PAYMENT' || item.operation === 'create_payment') {
                         await this._pushPaymentToCloud(item.payload);
+                    } else if (item.operation === 'UPDATE_PAYMENT') {
+                        await this._pushPaymentToCloud(item.payload);
                     } else if (item.operation === 'CREATE_ANNOUNCEMENT') {
                         await this._pushAnnouncementToCloud(item.payload);
+                    } else if (item.operation === 'UPDATE_ANNOUNCEMENT') {
+                        await this.cloudAnnouncement.updateOne(
+                            { localId: item.payload.localId },
+                            { $set: item.payload },
+                            { upsert: false }
+                        );
                     } else if (item.operation === 'DELETE_ANNOUNCEMENT') {
-                        await this.cloudAnnouncement.deleteOne({ localId: item.payload.localId });
+                        // ✅ Soft delete in cloud
+                        await this.cloudAnnouncement.updateOne(
+                            { localId: item.payload.localId },
+                            { $set: { isDeleted: true, deletedAt: new Date() } }
+                        );
                     }
 
                     item.status = 'completed'; // Or delete

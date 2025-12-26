@@ -42,6 +42,8 @@ class MemberAPI {
         const url = `${this.baseUrl}${endpoint}`;
         const defaultHeaders = {
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate', // ✅ Prevent caching
+            'Pragma': 'no-cache' // ✅ HTTP/1.0 compatibility
         };
 
         if (this.token) {
@@ -113,7 +115,9 @@ class MemberAPI {
     }
 
     async getPayments(limit = 10, page = 1) {
-        const params = new URLSearchParams({ limit, page }).toString();
+        // ✅ Cache-busting: Add timestamp to force fresh data
+        const timestamp = Date.now();
+        const params = new URLSearchParams({ limit, page, _t: timestamp }).toString();
         return await this.request(`${API_CONFIG.ENDPOINTS.MEMBER_PAYMENTS}?${params}`);
     }
 
@@ -125,7 +129,9 @@ class MemberAPI {
     }
 
     async getActiveAnnouncements() {
-        return await this.request(API_CONFIG.ENDPOINTS.ANNOUNCEMENTS_ACTIVE);
+        // ✅ Cache-busting: Add timestamp to force fresh data
+        const timestamp = Date.now();
+        return await this.request(`${API_CONFIG.ENDPOINTS.ANNOUNCEMENTS_ACTIVE}?_t=${timestamp}`);
     }
 
     async getCurrentGymCount() {

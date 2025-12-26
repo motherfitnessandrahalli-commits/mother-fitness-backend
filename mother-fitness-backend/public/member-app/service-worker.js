@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ultra-fitness-member-v14';
+const CACHE_NAME = 'ultra-fitness-member-v15'; // ✅ Bumped for hybrid sync fix
 const urlsToCache = [
     './',
     './index.html',

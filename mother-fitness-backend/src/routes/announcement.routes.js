@@ -6,11 +6,13 @@ const {
     deleteAnnouncement
 } = require('../controllers/announcementController');
 const { protect, restrictTo } = require('../middleware/auth');
+const noCache = require('../middleware/cacheControl');
 
 const router = express.Router();
 
 // Public/Member Routes (Protected but accessible to all roles)
-router.get('/active', protect, getActiveAnnouncements);
+// ✅ No caching for announcements
+router.get('/active', noCache, protect, getActiveAnnouncements);
 
 // Admin Routes
 router.use(protect);

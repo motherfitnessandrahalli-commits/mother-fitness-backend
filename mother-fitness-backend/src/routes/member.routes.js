@@ -12,6 +12,7 @@ const {
     downloadPaymentReceipt,
 } = require('../controllers/memberController');
 const { protect } = require('../middleware/auth');
+const noCache = require('../middleware/cacheControl');
 
 const router = express.Router();
 
@@ -167,7 +168,8 @@ router.get('/attendance', protect, getMemberAttendance);
  *       200:
  *         description: Payment records
  */
-router.get('/payments', protect, getMemberPayments);
+// ✅ No caching for payments
+router.get('/payments', noCache, protect, getMemberPayments);
 
 /**
  * @swagger
