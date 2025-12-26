@@ -5,6 +5,7 @@ const Attendance = require('./Attendance');
 const Payment = require('./Payment');
 const TimelineEvent = require('./TimelineEvent');
 const AdminProfile = require('./AdminProfile');
+const Announcement = require('./Announcement');
 
 module.exports = {
     User,
@@ -13,5 +14,6 @@ module.exports = {
     Payment,
     TimelineEvent,
     AdminProfile,
+    Announcement,
     SyncQueue: require('./SyncQueue')
 };
