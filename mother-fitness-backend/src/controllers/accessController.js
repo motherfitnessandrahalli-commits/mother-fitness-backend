@@ -4,6 +4,7 @@ const { asyncHandler, sendSuccess, AppError } = require('../utils/errorHandler')
 const { getLocalDateString, getLocalTimeString } = require('../utils/helpers');
 const { getIO } = require('../config/socket');
 const logger = require('../config/logger');
+const timeline = require('../services/TimelineService');
 
 /**
  * @desc    Verify membership and unlock door
@@ -59,7 +60,6 @@ const verifyAccess = asyncHandler(async (req, res, next) => {
             await customer.save();
 
             // Log check-in event to timeline
-            const timeline = require('../services/TimelineService');
             await timeline.logEvent(
                 customer._id,
                 'CHECK_IN',
@@ -99,7 +99,6 @@ const verifyAccess = asyncHandler(async (req, res, next) => {
         });
 
         // Log denied event to timeline
-        const timeline = require('../services/TimelineService');
         await timeline.logEvent(
             customer._id,
             'DENIED',

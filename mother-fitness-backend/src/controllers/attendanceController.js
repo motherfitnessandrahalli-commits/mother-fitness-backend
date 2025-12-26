@@ -1,5 +1,6 @@
 const { Attendance, Customer } = require('../models');
 const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler');
+const timeline = require('../services/TimelineService');
 const { getLocalDateString, getLocalTimeString, paginate, createPaginationMeta } = require('../utils/helpers');
 
 /**
@@ -44,7 +45,6 @@ const markAttendance = asyncHandler(async (req, res, next) => {
     });
 
     // Log check-in event to timeline
-    const timeline = require('../services/TimelineService');
     await timeline.logEvent(
         customer._id,
         'CHECK_IN',

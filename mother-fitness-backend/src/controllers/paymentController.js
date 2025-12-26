@@ -3,6 +3,7 @@ const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler')
 const { paginate, createPaginationMeta } = require('../utils/helpers');
 const { getIO } = require('../config/socket');
 const SyncService = require('../services/SyncService');
+const timeline = require('../services/TimelineService');
 
 /**
  * @desc    Get all payments with filtering and pagination
@@ -154,7 +155,6 @@ const createPayment = asyncHandler(async (req, res, next) => {
     );
 
     // Log payment events to timeline
-    const timeline = require('../services/TimelineService');
     const paymentStatusText = (customer.balance > 0) ? 'Pending' : 'Completed';
     await timeline.logEvent(
         customerId,

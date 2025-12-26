@@ -2,6 +2,7 @@ const { Customer, Payment } = require('../models');
 const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler');
 const { paginate, createPaginationMeta, calculatePlanValidity } = require('../utils/helpers');
 const SyncService = require('../services/SyncService');
+const timeline = require('../services/TimelineService');
 
 /**
  * @desc    Get all customers with filter, search, and pagination
@@ -131,7 +132,6 @@ const createCustomer = asyncHandler(async (req, res, next) => {
     });
 
     // Log join event to timeline
-    const timeline = require('../services/TimelineService');
     await timeline.logEvent(
         customer._id,
         'JOINED',
@@ -181,7 +181,6 @@ const createCustomer = asyncHandler(async (req, res, next) => {
     console.log(`☁️ Initiating cloud sync for new member: ${customer.memberId}`);
 
     // Log to timeline
-    const timeline = require('../services/TimelineService');
     const paymentStatus = (balance > 0) ? 'Pending' : 'Completed';
     await timeline.logEvent(
         customer._id,
