@@ -378,13 +378,14 @@ const downloadPaymentReceipt = asyncHandler(async (req, res, next) => {
         return next(new AppError('Unauthorized access to this payment', 403));
     }
 
-    // Find customer details
-    const customer = await Customer.findById(req.user.id);
+    // Find customer details - ensure we get latest balance
+    const customer = await Customer.findById(payment.customerId);
     if (!customer) {
         return next(new AppError('Customer not found', 404));
     }
 
     // Generate PDF
+    console.log(`[PDF] Generating for ${customer.name}, Balance: ${customer.balance}`);
     const pdfDoc = generatePaymentReceipt(payment, customer);
 
     // Set response headers

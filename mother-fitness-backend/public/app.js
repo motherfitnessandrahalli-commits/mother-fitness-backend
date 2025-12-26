@@ -1858,6 +1858,7 @@ class GymApp {
             if (customer) {
                 document.getElementById('payment-customer-id').value = customer.id;
                 document.getElementById('payment-customer-name').value = customer.name;
+                document.getElementById('payment-current-balance').value = customer.balance || 0;
 
                 // Auto-select plan based on customer's plan
                 const planSelect = document.getElementById('payment-plan');
@@ -1900,6 +1901,9 @@ class GymApp {
             this.showNotification('success', 'Success', 'Payment recorded successfully');
             this.closePaymentModal();
 
+            // Refresh Profit Metrics immediately
+            this.loadProfitMetrics();
+
             // Update local customer state immediately
             if (response.data.customer) {
                 const updatedCustomer = response.data.customer;
@@ -1924,7 +1928,9 @@ class GymApp {
                         updatedCustomer.validity.split('T')[0],
                         updatedCustomer.notes,
                         updatedCustomer.photo || this.customers[index].photo,
-                        new Date(updatedCustomer.createdAt)
+                        new Date(updatedCustomer.createdAt),
+                        updatedCustomer.memberId,
+                        updatedCustomer.balance || 0
                     );
 
                     console.log('New plan:', this.customers[index].plan, 'validity:', this.customers[index].validity);

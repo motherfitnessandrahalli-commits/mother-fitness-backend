@@ -139,7 +139,7 @@ const createPayment = asyncHandler(async (req, res, next) => {
         paymentMethod,
         receiptNumber,
         planType,
-        status: status || 'completed',
+        status: (balance > 0) ? 'pending' : (status || 'completed'),
         notes,
         addedBy: req.user.id,
     });
@@ -226,11 +226,11 @@ const deletePayment = asyncHandler(async (req, res, next) => {
  * @access  Private (Admin/Staff)
  */
 const getPaymentStats = asyncHandler(async (req, res, next) => {
-    const totalPayments = await Payment.countDocuments({ status: 'completed' });
+    const totalPayments = await Payment.countDocuments({ status: { $in: ['completed', 'pending'] } });
 
     // Calculate total revenue
     const revenueData = await Payment.aggregate([
-        { $match: { status: 'completed' } },
+        { $match: { status: { $in: ['completed', 'pending'] } } },
         { $group: { _id: null, totalRevenue: { $sum: '$amount' } } }
     ]);
 
@@ -247,7 +247,7 @@ const getPaymentStats = asyncHandler(async (req, res, next) => {
     const monthlyData = await Payment.aggregate([
         {
             $match: {
-                status: 'completed',
+                status: { $in: ['completed', 'pending'] },
                 paymentDate: { $gte: startOfMonth }
             }
         },

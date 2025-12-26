@@ -832,15 +832,27 @@
             <form id="payment-form" class="payment-form" onsubmit="app.handlePaymentSubmit(event)">
                 <input type="hidden" id="payment-customer-id">
 
-                <!-- Customer Name Field -->
-                <div class="form-group payment-form-group">
-                    <label class="payment-label">
-                        <span class="payment-label-icon">👤</span>
-                        Customer Name
-                    </label>
-                    <div class="payment-input-wrapper">
-                        <input type="text" id="payment-customer-name" class="payment-input payment-input-readonly"
-                            readonly>
+                <!-- Customer Name and Balance Row -->
+                <div class="payment-form-row">
+                    <div class="form-group payment-form-group">
+                        <label class="payment-label">
+                            <span class="payment-label-icon">👤</span>
+                            Customer Name
+                        </label>
+                        <div class="payment-input-wrapper">
+                            <input type="text" id="payment-customer-name" class="payment-input payment-input-readonly"
+                                readonly>
+                        </div>
+                    </div>
+                    <div class="form-group payment-form-group">
+                        <label class="payment-label">
+                            <span class="payment-label-icon">⚠️</span>
+                            Current Balance (₹)
+                        </label>
+                        <div class="payment-input-wrapper">
+                            <input type="number" id="payment-current-balance"
+                                class="payment-input payment-input-readonly" readonly value="0">
+                        </div>
                     </div>
                 </div>
 

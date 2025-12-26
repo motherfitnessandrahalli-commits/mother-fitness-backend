@@ -139,8 +139,9 @@ class SyncService {
             gender: memberData.gender,
             joinDate: memberData.joinDate,
             membershipStatus: memberData.membershipStatus,
-            planType: memberData.planPlan || memberData.planType,
-            endDate: memberData.endDate
+            planType: memberData.plan || memberData.planType,
+            endDate: memberData.endDate,
+            balance: memberData.balance || 0
             // Explicitly NO PHOTO
         };
 
@@ -219,15 +220,17 @@ class SyncService {
     // --- Internal Worker Methods ---
 
     async _pushMemberToCloud(payload) {
-        // Upsert based on memberId
-        const filter = { memberId: payload.memberId };
-        const update = { ...payload, lastSyncedAt: new Date() };
+        // Upsert based on memberId (Normalized)
+        const normalizedMemberId = payload.memberId.toString().toUpperCase().trim();
+        const filter = { memberId: normalizedMemberId };
+        const update = { ...payload, memberId: normalizedMemberId, lastSyncedAt: new Date() };
         await this.cloudCustomer.findOneAndUpdate(filter, update, { upsert: true, new: true });
     }
 
     async _pushPaymentToCloud(payload) {
         // 1. Find Cloud Customer ID
-        const cloudUser = await this.cloudCustomer.findOne({ memberId: payload.memberId });
+        const normalizedMemberId = payload.memberId.toString().toUpperCase().trim();
+        const cloudUser = await this.cloudCustomer.findOne({ memberId: normalizedMemberId });
         if (!cloudUser) {
             throw new Error(`Cloud user not found for ${payload.memberId} (Deferring payment sync)`);
         }

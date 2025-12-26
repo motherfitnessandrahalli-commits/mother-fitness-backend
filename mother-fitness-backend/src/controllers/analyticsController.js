@@ -227,7 +227,7 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
         {
             $match: {
                 paymentDate: { $gte: dailyStart, $lte: dailyEnd },
-                status: 'completed'
+                status: { $in: ['completed', 'pending'] }
             }
         },
         {
@@ -246,7 +246,7 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
         {
             $match: {
                 paymentDate: { $gte: weeklyStart, $lte: dailyEnd },
-                status: 'completed'
+                status: { $in: ['completed', 'pending'] }
             }
         },
         {
@@ -265,7 +265,7 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
         {
             $match: {
                 paymentDate: { $gte: monthlyStart, $lte: monthlyEnd },
-                status: 'completed'
+                status: { $in: ['completed', 'pending'] }
             }
         },
         {
@@ -284,7 +284,7 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
         {
             $match: {
                 paymentDate: { $gte: yearlyStart, $lte: yearlyEnd },
-                status: 'completed'
+                status: { $in: ['completed', 'pending'] }
             }
         },
         {

@@ -152,7 +152,7 @@ const createCustomer = asyncHandler(async (req, res, next) => {
                 paymentMethod: initialPayment.paymentMethod || 'Cash',
                 receiptNumber: initialPayment.receiptNumber,
                 paymentDate: new Date(),
-                status: 'completed',
+                status: (balance > 0) ? 'pending' : 'completed',
                 addedBy: req.user.id
             });
         } catch (error) {
