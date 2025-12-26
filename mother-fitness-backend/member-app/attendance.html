@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#6c5ce7">
     <title>Attendance - Mother Fitness</title>
-    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./styles.css?v=6.2.1">
 </head>
 
 <body>
@@ -25,8 +25,9 @@
         </main>
     </div>
 
-    <script src="./api.js"></script>
-    <script src="./theme.js"></script>
+    <script src="./config.js?v=6.2.1"></script>
+    <script src="./api.js?v=6.2.1"></script>
+    <script src="./theme.js?v=6.2.1"></script>
     <script>
         const api = new MemberAPI();
         if (!api.token) window.location.href = './index.html';

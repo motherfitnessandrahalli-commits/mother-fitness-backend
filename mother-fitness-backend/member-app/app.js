@@ -63,8 +63,9 @@ class MemberApp {
             // Display Balance if any
             const balanceCard = document.getElementById('balanceCard');
             const balanceAmount = document.getElementById('balanceAmount');
-            if (this.memberProfile.balance > 0) {
-                balanceAmount.textContent = `₹${this.memberProfile.balance}`;
+            const balance = Number(this.memberProfile.balance) || 0;
+            if (balance > 0) {
+                balanceAmount.textContent = `₹${balance}`;
                 balanceCard.style.display = 'flex';
             } else {
                 balanceCard.style.display = 'none';
