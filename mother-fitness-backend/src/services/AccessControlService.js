@@ -166,8 +166,16 @@ class AccessControlService {
             `Entered gym via ${eventData.deviceIp || 'IN Device'}. Status: ${status}`
         );
 
+        let message = 'Membership Active';
+        let voice = `Welcome ${customer.name}`;
+
+        if (customer.balance > 0) {
+            message = `Membership Active. Balance Due: ₹${customer.balance}`;
+            voice = `Welcome ${customer.name}. You have a balance of ${customer.balance} rupees. Please pay at reception.`;
+        }
+
         logger.info(`🔔 [AccessControl] Emitting ALLOWED for ${customer.name}`);
-        const result = { customer, type: 'IN', message: 'Membership Active' };
+        const result = { customer, type: 'IN', message, voice };
         this.emitAccessResult('allowed', result);
         return { success: true, status: 'allowed', ...result };
     }

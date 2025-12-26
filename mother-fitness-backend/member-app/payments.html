@@ -78,7 +78,10 @@
                     div.innerHTML = `
                         <div class="item-icon">💳</div>
                         <div class="item-content">
-                            <p class="item-title">₹${payment.amount} - ${payment.planType}</p>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <p class="item-title">₹${payment.amount} - ${payment.planType}</p>
+                                <span class="item-badge badge-${payment.status || 'completed'}">${payment.status || 'completed'}</span>
+                            </div>
                             <p class="item-subtitle">${date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                             <p class="item-meta">${payment.paymentMethod} ${payment.receiptNumber ? `• Receipt: ${payment.receiptNumber}` : ''}</p>
                         </div>

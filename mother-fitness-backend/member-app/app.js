@@ -60,6 +60,16 @@ class MemberApp {
             document.getElementById('memberId').textContent = this.memberProfile.memberId;
             document.getElementById('planType').textContent = this.memberProfile.plan;
 
+            // Display Balance if any
+            const balanceCard = document.getElementById('balanceCard');
+            const balanceAmount = document.getElementById('balanceAmount');
+            if (this.memberProfile.balance > 0) {
+                balanceAmount.textContent = `₹${this.memberProfile.balance}`;
+                balanceCard.style.display = 'flex';
+            } else {
+                balanceCard.style.display = 'none';
+            }
+
             // Update member avatar with photo if available
             const avatarDiv = document.querySelector('.member-avatar');
             if (this.memberProfile.photo) {

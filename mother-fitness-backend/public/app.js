@@ -105,7 +105,9 @@ class AccessResultManager {
         this.overlayContainer.prepend(card);
 
         // Voice Alert
-        if (message) {
+        if (data.voice) {
+            this.app.playVoiceAlert(data.voice);
+        } else if (message) {
             this.app.playVoiceAlert(message);
         } else if (success) {
             this.app.playVoiceAlert(`Welcome ${customer ? customer.name : ''}`);
