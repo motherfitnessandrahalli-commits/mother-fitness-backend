@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { Customer, Payment, Plan } = require('../models');  // Import Plan model
 const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler');
 const { createPaginationMeta } = require('../utils/helpers');
@@ -184,12 +185,6 @@ const updateCustomer = asyncHandler(async (req, res, next) => {
         };
 
         // Reset Payment Summary for new cycle
-        // (Any previous balance is wiped or carried over? Spec doesn't say. 
-        // User said "membership.planPriceAtPurchase NEVER changes".
-        // Recalculate logic uses startDate filter. So paymentSummary will reset to { totalPaid: 0, balance: price } automatically once we save and recalculate?
-        // Actually recalculate is triggered by PAYMENT insert, not Customer update.
-        // So we should manually update paymentSummary here to be safe or trigger recalc.)
-
         customer.paymentSummary = {
             totalPaid: 0,
             balance: customer.membership.planPriceAtPurchase,
@@ -212,16 +207,43 @@ const deleteCustomer = asyncHandler(async (req, res, next) => {
     if (!customer) return next(new AppError('Customer not found', 404));
 
     await customer.deleteOne();
-    // Sync hooks might handle delete if using mongoose middlewares, 
-    // but SyncService handles 'save'. Delete hooks are separate.
-    // CloudSyncService doesn't have a delete hook in `Customer.js`.
-    // We should probably add manual sync for delete or add a hook.
-    // For now, let's assume soft delete or manual sync call.
-    // Spec didn't explicitly ask for Delete Sync, but "Hybrid Safe" implies it.
-    // I'll add a manual sync call here just in case.
-    // CloudSyncService.syncRecord('MEMBER', { memberId: customer.memberId }, 'DELETE'); 
 
     sendSuccess(res, 200, null, 'Customer deleted');
+});
+
+/**
+ * @desc    Get customer stats
+ * @route   GET /api/customers/stats/overview
+ */
+const getCustomerStats = asyncHandler(async (req, res, next) => {
+    const total = await Customer.countDocuments();
+    const active = await Customer.countDocuments({ membershipStatus: 'ACTIVE' });
+    const expired = await Customer.countDocuments({ membershipStatus: 'EXPIRED' });
+
+    // Expiring in 7 days
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const expiring = await Customer.countDocuments({
+        membershipStatus: 'ACTIVE',
+        'membership.endDate': { $lte: nextWeek }
+    });
+
+    sendSuccess(res, 200, {
+        total,
+        active,
+        expiring,
+        expired
+    });
+});
+
+/**
+ * @desc    Sync badges (Legacy Stub)
+ * @route   POST /api/customers/sync-badges
+ */
+const syncBadges = asyncHandler(async (req, res, next) => {
+    // Legacy functionality. 
+    // If needed, we can implement badge logic here based on 'totalVisits' or similar.
+    sendSuccess(res, 200, { synced: 0 }, 'Badges synced');
 });
 
 module.exports = {
@@ -229,6 +251,7 @@ module.exports = {
     getCustomer,
     createCustomer,
     updateCustomer,
-    deleteCustomer
+    deleteCustomer,
+    getCustomerStats,
+    syncBadges
 };
-const mongoose = require('mongoose');
