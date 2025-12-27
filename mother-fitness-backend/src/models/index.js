@@ -15,5 +15,6 @@ module.exports = {
     TimelineEvent,
     AdminProfile,
     Announcement,
+    Plan,
     SyncQueue: require('./SyncQueue')
 };
