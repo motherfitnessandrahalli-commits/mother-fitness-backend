@@ -1,8 +1,7 @@
 const { Payment, Customer } = require('../models');
 const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler');
 const PaymentService = require('../services/PaymentService');
-const CloudSyncService = require('../services/CloudSyncService'); // Import directly if needed for explicit sync, though hooks handle it.
-// Hooks handle sync, but we might want to ensure it happens.
+const CloudSyncService = require('../services/CloudSyncService');
 
 /**
  * @desc    Get all payments with filtering
@@ -12,13 +11,6 @@ const getPayments = asyncHandler(async (req, res) => {
     const { customerId, page = 1, limit = 20 } = req.query;
 
     const query = {};
-    if (customerId) query.memberId = customerId; // Ensure we query by memberId string if that's what we store, or resolve ObjectId. 
-    // Our new Payment model uses string `memberId` (e.g. U001). 
-    // Front-end might pass ObjectId or String.
-    // If ObjectId, we might need to find the memberId string.
-    // Let's assume the frontend passes the right ID or we lookup.
-    // For safety, if customerId looks like a MongoID, lookup user? 
-    // The previous controller used `customerId` as ref. New one uses `memberId`.
 
     // Auto-detect if customerId is passed
     if (customerId) {
@@ -50,6 +42,16 @@ const getPayments = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Get customer payments (Route Wrapper)
+ * @route   GET /api/payments/customer/:customerId
+ */
+const getCustomerPayments = asyncHandler(async (req, res) => {
+    // Reuse existing logic, just map params to query
+    req.query.customerId = req.params.customerId;
+    return getPayments(req, res);
+});
+
+/**
  * @desc    Create new payment (Immutable Ledger Entry)
  * @route   POST /api/payments
  */
@@ -69,13 +71,12 @@ const createPayment = asyncHandler(async (req, res) => {
 
     // 1. Verify Member Exists
     // We search by memberId string
-    const member = await Customer.findOne({ memberId });
+    let member = await Customer.findOne({ memberId });
     if (!member) {
         // Fallback: try finding by _id if frontend sent ObjectId
         const memberById = await Customer.findById(memberId);
         if (!memberById) throw new AppError('Member not found', 404);
-        // If found by ID, use its memberId
-        // But req.body should barely have memberId.
+        member = memberById; // Use found member
     }
 
     // 2. Create Payment Record (Immutable)
@@ -85,7 +86,7 @@ const createPayment = asyncHandler(async (req, res) => {
         method: method || 'CASH',
         transactionRef,
         paymentDate: paymentDate || new Date(),
-        receivedBy: req.user ? req.user.name : 'admin' // Assuming auth middleware adds user
+        receivedBy: req.user ? req.user.name : 'admin'
     });
 
     // 3. Recalculate Summary (The Fix)
@@ -99,6 +100,36 @@ const createPayment = asyncHandler(async (req, res) => {
         payment,
         member: updatedMember // Frontend often needs this to update UI
     }, 'Payment recorded successfully');
+});
+
+/**
+ * @desc    Update payment
+ * @route   PUT /api/payments/:id
+ */
+const updatePayment = asyncHandler(async (req, res, next) => {
+    // Strict Immutability: Block updates.
+    // Or allow ONLY admin to fix errors? 
+    // For now, let's block it as per "Immutable Ledger" spec.
+    // Use Delete + Re-create for errors.
+    return next(new AppError('Payments are immutable. Delete and re-create if needed.', 405));
+});
+
+/**
+ * @desc    Delete payment
+ * @route   DELETE /api/payments/:id
+ */
+const deletePayment = asyncHandler(async (req, res, next) => {
+    const payment = await Payment.findById(req.params.id);
+    if (!payment) return next(new AppError('Payment not found', 404));
+
+    const memberId = payment.memberId;
+
+    await payment.deleteOne();
+
+    // Recalculate summary after deletion
+    await PaymentService.recalculatePaymentSummary(memberId);
+
+    sendSuccess(res, 200, null, 'Payment deleted');
 });
 
 /**
@@ -117,6 +148,9 @@ const getPaymentStats = asyncHandler(async (req, res) => {
 
 module.exports = {
     getPayments,
+    getCustomerPayments,
     createPayment,
+    updatePayment,
+    deletePayment,
     getPaymentStats
 };
