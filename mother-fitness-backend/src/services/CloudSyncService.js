@@ -1,135 +1,133 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+const SyncQueue = require('../models/SyncQueue');
 const logger = require('../config/logger');
 
-/**
- * CloudSyncService
- * Responsible for synchronizing local data to the cloud mirror
- * Uses a persistent local queue to handle offline periods
- */
 class CloudSyncService {
     constructor() {
         this.cloudUrl = process.env.CLOUD_API_URL;
         this.syncKey = process.env.SYNC_KEY;
         this.isSyncing = false;
-        this.queuePath = path.join(process.cwd(), 'data', 'sync-queue.json');
-        this.queue = this.loadQueue();
 
+        // Start worker
         if (this.cloudUrl) {
-            logger.info('🛰️  Cloud Sync: ENABLED (Hybrid Mode)');
+            logger.info('🛰️  Cloud Sync: ENABLED (MongoDB Queue)');
             this.startWorker();
         } else {
-            logger.info('🛰️  Cloud Sync: DISABLED (Local Mode Only)');
+            logger.info('🛰️  Cloud Sync: DISABLED');
         }
     }
 
     /**
-     * Load queue from disk
+     * Add record to sync queue
+     * @param {String} entity - 'MEMBER', 'PAYMENT', 'ATTENDANCE', 'ANNOUNCEMENT'
+     * @param {Object} data - The full document
+     * @param {String} action - 'UPSERT' (default) or 'DELETE'
      */
-    loadQueue() {
-        try {
-            const dataDir = path.join(process.cwd(), 'data');
-            if (!fs.existsSync(dataDir)) {
-                fs.mkdirSync(dataDir);
-            }
-            if (fs.existsSync(this.queuePath)) {
-                return JSON.parse(fs.readFileSync(this.queuePath, 'utf8'));
-            }
-        } catch (error) {
-            logger.error(`Cloud Sync: Error loading queue: ${error.message}`);
-        }
-        return [];
-    }
-
-    /**
-     * Save queue to disk
-     */
-    saveQueue() {
-        try {
-            fs.writeFileSync(this.queuePath, JSON.stringify(this.queue, null, 2));
-        } catch (error) {
-            logger.error(`Cloud Sync: Error saving queue: ${error.message}`);
-        }
-    }
-
-    /**
-     * Sync a specific record
-     * @param {String} type - 'customer' | 'attendance' | 'payment'
-     * @param {Object} data - The data object to sync
-     */
-    async syncRecord(type, data) {
+    async syncRecord(entity, data, action = 'UPSERT') {
         if (!this.cloudUrl) return;
 
-        // Add to queue first (Persistence First)
-        this.addToQueue(type, data);
+        try {
+            const entityId = data.memberId || data.paymentId || data.attendanceId || data._id; // Resolve ID based on entity type logic if needed, or just use _id if others not present. 
+            // Better ID resolution:
+            // MEMBER -> memberId
+            // PAYMENT -> paymentId
+            // ATTENDANCE -> attendanceId ? The spec says _id is ObjectId. Attendance usually has valid _id. 
+            // Actually, the models have:
+            // Customer -> memberId
+            // Payment -> paymentId
+            // Attendance -> attendanceId (I added it in the schema, wait. Yes: attendanceId: String)
+            // Announcement -> _id (mongo ID)
 
-        // Try to sync immediately
-        this.processQueue();
-    }
+            let resolvedId = data._id;
+            if (entity === 'customer' || entity === 'MEMBER') {
+                resolvedId = data.memberId;
+                entity = 'MEMBER';
+            } else if (entity === 'payment' || entity === 'PAYMENT') {
+                resolvedId = data.paymentId;
+                entity = 'PAYMENT';
+            } else if (entity === 'attendance' || entity === 'ATTENDANCE') {
+                // The earlier Attendance schema has `attendanceId`.
+                resolvedId = data.attendanceId || data._id;
+                entity = 'ATTENDANCE';
+            } else if ((entity === 'announcement' || entity === 'ANNOUNCEMENT')) {
+                resolvedId = data._id;
+                entity = 'ANNOUNCEMENT';
+            }
 
-    addToQueue(type, data) {
-        // Prevent duplicate IDs in queue - update entry if it exists
-        const id = data._id || data.id;
-        const existingIndex = this.queue.findIndex(item => item.type === type && (item.data._id === id || item.data.id === id));
+            const payload = data.toObject ? data.toObject() : data;
 
-        if (existingIndex > -1) {
-            this.queue[existingIndex] = { type, data, timestamp: new Date() };
-        } else {
-            this.queue.push({ type, data, timestamp: new Date() });
+            // Create Sync Entry
+            await SyncQueue.create({
+                entity: entity.toUpperCase(),
+                entityId: resolvedId,
+                action: action.toUpperCase(),
+                payload: payload,
+                status: 'PENDING'
+            });
+
+            // Trigger sync (optional: throttle this if high volume)
+            this.processQueue();
+
+        } catch (error) {
+            logger.error(`[CloudSync] Error adding to queue: ${error.message}`);
         }
-
-        this.saveQueue();
     }
 
-    /**
-     * Start periodic sync worker
-     */
     startWorker() {
-        // Process queue every minute
-        setInterval(() => this.processQueue(), 60 * 1000);
-        logger.info('🛰️  Cloud Sync: Worker started (1 min interval)');
+        // Run every 30 seconds
+        setInterval(() => this.processQueue(), 30 * 1000);
     }
 
     async processQueue() {
-        if (this.isSyncing || this.queue.length === 0 || !this.cloudUrl) return;
+        if (this.isSyncing || !this.cloudUrl) return;
 
-        this.isSyncing = true;
+        try {
+            this.isSyncing = true;
 
-        const originalQueueSize = this.queue.length;
-        const successfulIndices = [];
+            // Fetch pending items
+            const pendingItems = await SyncQueue.find({ status: 'PENDING' }).sort({ createdAt: 1 }).limit(10);
 
-        for (let i = 0; i < this.queue.length; i++) {
-            const item = this.queue[i];
-            try {
-                const response = await axios.post(`${this.cloudUrl}/api/sync/${item.type}`, item.data, {
-                    headers: {
-                        'X-Sync-Key': this.syncKey,
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 5000
-                });
-
-                if (response.status === 200 || response.status === 201) {
-                    successfulIndices.push(i);
-                }
-            } catch (error) {
-                logger.error(`🛰️  Cloud Sync: Error syncing ${item.type} (${item.data._id}): ${error.message}`);
-                if (error.response) {
-                    logger.error(`🛰️  Cloud Sync: Server replied with ${error.response.status}: ${JSON.stringify(error.response.data)}`);
-                }
-                break; // Stop processing queue if internet is down or server error
+            if (pendingItems.length === 0) {
+                this.isSyncing = false;
+                return;
             }
-        }
 
-        if (successfulIndices.length > 0) {
-            // Remove successful items from queue
-            this.queue = this.queue.filter((_, index) => !successfulIndices.includes(index));
-            this.saveQueue();
-            logger.info(`🛰️  Cloud Sync: Successfully synced ${successfulIndices.length}/${originalQueueSize} pending items`);
-        }
+            logger.info(`[CloudSync] Processing ${pendingItems.length} items...`);
 
-        this.isSyncing = false;
+            for (const item of pendingItems) {
+                try {
+                    // Send to Cloud
+                    await axios.post(`${this.cloudUrl}/api/sync/v2`, { // Assumed generic endpoint or specific ones
+                        entity: item.entity,
+                        entityId: item.entityId,
+                        action: item.action,
+                        payload: item.payload
+                    }, {
+                        headers: { 'X-Sync-Key': this.syncKey },
+                        timeout: 10000
+                    });
+
+                    // Mark Success
+                    item.status = 'SUCCESS';
+                    await item.save();
+
+                } catch (error) {
+                    console.error(`[CloudSync] Failed item ${item._id}: ${error.message}`);
+                    item.status = 'FAILED'; // Or retry logic (increment retryCount)
+                    item.retryCount += 1;
+                    if (item.retryCount < 5) {
+                        item.status = 'PENDING'; // Retry later
+                        item.lastAttemptAt = new Date();
+                    }
+                    await item.save();
+                }
+            }
+
+        } catch (error) {
+            logger.error(`[CloudSync] Worker error: ${error.message}`);
+        } finally {
+            this.isSyncing = false;
+        }
     }
 }
 

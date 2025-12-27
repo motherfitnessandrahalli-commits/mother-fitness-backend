@@ -1246,13 +1246,13 @@ class GymApp {
                 c.age,
                 c.email,
                 c.phone,
-                c.plan,
-                c.validity ? c.validity.split('T')[0] : new Date().toISOString().split('T')[0], // Safety check
+                c.membership?.planName || c.plan || 'Unknown',
+                c.membership?.endDate ? c.membership.endDate.split('T')[0] : (c.validity ? c.validity.split('T')[0] : new Date().toISOString().split('T')[0]),
                 c.notes,
                 c.photo || '',
                 new Date(c.createdAt),
                 c.memberId,
-                c.balance || 0
+                c.paymentSummary?.balance !== undefined ? c.paymentSummary.balance : (c.balance || 0)
             ));
 
             this.render();
@@ -1306,13 +1306,13 @@ class GymApp {
                 c.age,
                 c.email,
                 c.phone,
-                c.plan,
-                c.validity.split('T')[0],
+                c.membership?.planName || c.plan || 'Unknown',
+                c.membership?.endDate ? c.membership.endDate.split('T')[0] : (c.validity ? c.validity.split('T')[0] : new Date().toISOString().split('T')[0]),
                 c.notes,
                 c.photo || '',
                 new Date(c.createdAt),
                 c.memberId,
-                c.balance || 0
+                c.paymentSummary?.balance !== undefined ? c.paymentSummary.balance : (c.balance || 0)
             );
 
             this.customers.push(newCustomer);
@@ -1365,12 +1365,12 @@ class GymApp {
                     c.age,
                     c.email,
                     c.phone,
-                    c.plan,
-                    c.validity.split('T')[0],
+                    c.membership?.planName || c.plan || 'Unknown',
+                    c.membership?.endDate ? c.membership.endDate.split('T')[0] : (c.validity ? c.validity.split('T')[0] : new Date().toISOString().split('T')[0]),
                     c.notes,
                     c.photo || '',
                     new Date(c.createdAt),
-                    c.memberId
+                    c.memberId || c.id // fallbacks
                 );
 
                 this.customers[index] = updatedCustomer;

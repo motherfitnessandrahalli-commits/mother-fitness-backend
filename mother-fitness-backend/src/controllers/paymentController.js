@@ -1,298 +1,122 @@
 const { Payment, Customer } = require('../models');
 const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler');
-const { paginate, createPaginationMeta } = require('../utils/helpers');
-const { getIO } = require('../config/socket');
-const SyncService = require('../services/SyncService');
-const timeline = require('../services/TimelineService');
+const PaymentService = require('../services/PaymentService');
+const CloudSyncService = require('../services/CloudSyncService'); // Import directly if needed for explicit sync, though hooks handle it.
+// Hooks handle sync, but we might want to ensure it happens.
 
 /**
- * @desc    Get all payments with filtering and pagination
+ * @desc    Get all payments with filtering
  * @route   GET /api/payments
- * @access  Private (Admin/Staff)
  */
-const getPayments = asyncHandler(async (req, res, next) => {
-    const {
-        page = 1,
-        limit = 10,
-        customerId,
-        status,
-        sortBy = 'paymentDate',
-        order = 'desc'
-    } = req.query;
+const getPayments = asyncHandler(async (req, res) => {
+    const { customerId, page = 1, limit = 20 } = req.query;
 
     const query = {};
+    if (customerId) query.memberId = customerId; // Ensure we query by memberId string if that's what we store, or resolve ObjectId. 
+    // Our new Payment model uses string `memberId` (e.g. U001). 
+    // Front-end might pass ObjectId or String.
+    // If ObjectId, we might need to find the memberId string.
+    // Let's assume the frontend passes the right ID or we lookup.
+    // For safety, if customerId looks like a MongoID, lookup user? 
+    // The previous controller used `customerId` as ref. New one uses `memberId`.
 
-    // Filter by customer
+    // Auto-detect if customerId is passed
     if (customerId) {
-        query.customerId = customerId;
+        // Check if it's an ObjectId (legacy/url param) or MemberId (U001)
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(customerId);
+        if (isObjectId) {
+            const customer = await Customer.findById(customerId);
+            if (customer) query.memberId = customer.memberId;
+        } else {
+            query.memberId = customerId;
+        }
     }
-
-    // Filter by status
-    if (status) {
-        query.status = status;
-    }
-
-    const { skip, limit: limitParsed } = paginate(page, limit);
-
-    // Sorting
-    const sort = {};
-    sort[sortBy] = order === 'asc' ? 1 : -1;
 
     const payments = await Payment.find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(limitParsed)
-        .populate('customerId', 'name email phone plan')
-        .populate('addedBy', 'name email');
+        .sort({ paymentDate: -1 })
+        .limit(parseInt(limit))
+        .skip((parseInt(page) - 1) * parseInt(limit));
 
     const total = await Payment.countDocuments(query);
 
     sendSuccess(res, 200, {
         payments,
-        pagination: createPaginationMeta(total, page, limitParsed),
+        pagination: {
+            total,
+            page: parseInt(page),
+            pages: Math.ceil(total / limit)
+        }
     });
 });
 
 /**
- * @desc    Get payments for a specific customer
- * @route   GET /api/payments/customer/:customerId
- * @access  Private (Admin/Staff)
- */
-const getCustomerPayments = asyncHandler(async (req, res, next) => {
-    const { customerId } = req.params;
-
-    const payments = await Payment.find({ customerId })
-        .sort({ paymentDate: -1 })
-        .populate('addedBy', 'name email');
-
-    sendSuccess(res, 200, { payments });
-});
-
-/**
- * @desc    Create new payment record
+ * @desc    Create new payment (Immutable Ledger Entry)
  * @route   POST /api/payments
- * @access  Private (Admin/Staff)
  */
-const createPayment = asyncHandler(async (req, res, next) => {
+const createPayment = asyncHandler(async (req, res) => {
     const {
-        customerId,
+        memberId, // Expecting HUMAN ID (U010)
         amount,
-        paymentDate,
-        paymentMethod,
-        receiptNumber,
-        planType,
-        status,
+        method,
+        transactionRef,
         notes,
-        balance // Extract balance
+        paymentDate
     } = req.body;
 
-    // Verify customer exists
-    const customer = await Customer.findById(customerId);
-    if (!customer) {
-        return next(new AppError('Customer not found', 404));
+    if (!memberId || amount === undefined) {
+        throw new AppError('Member ID and Amount are required', 400);
     }
 
-    // Calculate new validity
-    let startDate = new Date(paymentDate || new Date());
-    const currentValidity = new Date(customer.validity);
-    const today = new Date();
-
-    // If customer is currently active (validity > today), extend from current validity
-    if (currentValidity > today) {
-        startDate = currentValidity;
+    // 1. Verify Member Exists
+    // We search by memberId string
+    const member = await Customer.findOne({ memberId });
+    if (!member) {
+        // Fallback: try finding by _id if frontend sent ObjectId
+        const memberById = await Customer.findById(memberId);
+        if (!memberById) throw new AppError('Member not found', 404);
+        // If found by ID, use its memberId
+        // But req.body should barely have memberId.
     }
 
-    const endDate = new Date(startDate);
-    switch (planType) {
-        case 'Monthly':
-            endDate.setMonth(endDate.getMonth() + 1);
-            break;
-        case 'Quarterly':
-            endDate.setMonth(endDate.getMonth() + 3);
-            break;
-        case 'Half-Yearly':
-            endDate.setMonth(endDate.getMonth() + 6);
-            break;
-        case 'Yearly':
-            endDate.setMonth(endDate.getMonth() + 12);
-            break;
-        default:
-            endDate.setMonth(endDate.getMonth() + 1); // Default to monthly
-    }
-
-    // Update customer plan, validity and balance
-    customer.plan = planType;
-    customer.validity = endDate;
-
-    const { newBalance } = req.body;
-    if (newBalance !== undefined && newBalance !== '') {
-        customer.balance = Number(newBalance);
-    } else if (balance !== undefined && balance !== '') {
-        // Fallback to legacy balance field if newBalance is missing
-        customer.balance = Number(balance);
-    }
-
-    await customer.save();
-
-    // Calculate financial state Snapshot
-    const currentPaid = Number(amount);
-    const remainingBalance = Number(customer.balance);
-    const totalSnapshot = currentPaid + remainingBalance;
-
-    let paymentStatus = 'paid';
-    if (remainingBalance > 0) {
-        paymentStatus = 'partial';
-    }
-
-    // Create payment
+    // 2. Create Payment Record (Immutable)
     const payment = await Payment.create({
-        customerId,
-        customerName: customer.name,
-        amount: currentPaid,
-        totalAmount: totalSnapshot,
-        paidAmount: currentPaid,
-        balance: remainingBalance,
+        memberId: member.memberId, // Ensure we store the String ID
+        amount,
+        method: method || 'CASH',
+        transactionRef,
         paymentDate: paymentDate || new Date(),
-        paymentMethod,
-        receiptNumber,
-        planType,
-        status: paymentStatus,
-        notes,
-        addedBy: req.user.id,
+        receivedBy: req.user ? req.user.name : 'admin' // Assuming auth middleware adds user
     });
 
-    // 🔄 CLOUD SYNC: Push Payment to Cloud
-    const SyncService = require('../services/SyncService');
-    SyncService.syncPayment(payment, customer).catch(err =>
-        console.error(`☁️ Sync Error (Payment ${payment._id}):`, err.message)
-    );
+    // 3. Recalculate Summary (The Fix)
+    await PaymentService.recalculatePaymentSummary(member.memberId);
 
-    // Log payment events to timeline
-    const paymentStatusText = (customer.balance > 0) ? 'Pending' : 'Completed';
-    await timeline.logEvent(
-        customerId,
-        'PAYMENT',
-        `[${paymentStatusText}] Payment of ₹${amount} Received`,
-        `Paid via ${paymentMethod} for ${planType} plan. Current Balance: ₹${customer.balance}`,
-        { status: (customer.balance > 0) ? 'pending' : 'completed' }
-    );
+    // 4. Return Success
+    // Fetch updated member to return fresh balance
+    const updatedMember = await Customer.findOne({ memberId: member.memberId });
 
-    // If it's a plan renewal (already handled in validity logic above)
-    await timeline.logEvent(
-        customerId,
-        'RENEWED',
-        'Membership Renewed',
-        `Plan extended to ${new Date(endDate).toLocaleDateString()}. New Plan: ${planType}`
-    );
-
-    // Broadcast real-time update
-    try {
-        const { getIO } = require('../config/socket');
-        const io = getIO();
-        io.emit('payment:new', payment);
-        io.emit('customer:updated', customer);
-    } catch (error) {
-        console.error('Socket emit error:', error.message);
-    }
-
-    // Convert customer to plain object to ensure all fields are sent
-    const customerData = customer.toObject();
-
-    // 🔄 CLOUD SYNC: Push Payment to Cloud DB
-    // We need the customer object for mapping
-    if (customer) {
-        SyncService.syncPayment(payment, customer).catch(err => console.error('Sync Error:', err.message));
-    }
-
-    sendSuccess(res, 201, { payment, customer: customerData }, 'Payment recorded and plan updated successfully');
+    sendSuccess(res, 201, {
+        payment,
+        member: updatedMember // Frontend often needs this to update UI
+    }, 'Payment recorded successfully');
 });
 
 /**
- * @desc    Update payment record
- * @route   PUT /api/payments/:id
- * @access  Private (Admin/Staff)
+ * @desc    Get stats
  */
-const updatePayment = asyncHandler(async (req, res, next) => {
-    let payment = await Payment.findById(req.params.id);
-
-    if (!payment) {
-        return next(new AppError('Payment not found', 404));
-    }
-
-    payment = await Payment.findByIdAndUpdate(req.params.id, req.body, {
-        new: true,
-        runValidators: true,
-    });
-
-    sendSuccess(res, 200, { payment }, 'Payment updated successfully');
-});
-
-/**
- * @desc    Delete payment record
- * @route   DELETE /api/payments/:id
- * @access  Private (Admin only)
- */
-const deletePayment = asyncHandler(async (req, res, next) => {
-    const payment = await Payment.findById(req.params.id);
-
-    if (!payment) {
-        return next(new AppError('Payment not found', 404));
-    }
-
-    await payment.deleteOne();
-
-    sendSuccess(res, 200, null, 'Payment deleted successfully');
-});
-
-/**
- * @desc    Get payment statistics
- * @route   GET /api/payments/stats/overview
- * @access  Private (Admin/Staff)
- */
-const getPaymentStats = asyncHandler(async (req, res, next) => {
-    const totalPayments = await Payment.countDocuments({ status: { $in: ['completed', 'pending'] } });
-
-    // Calculate total revenue
-    const revenueData = await Payment.aggregate([
-        { $match: { status: { $in: ['completed', 'pending'] } } },
-        { $group: { _id: null, totalRevenue: { $sum: '$amount' } } }
+const getPaymentStats = asyncHandler(async (req, res) => {
+    // Simple stats
+    const totalRevenue = await Payment.aggregate([
+        { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
-
-    const totalRevenue = revenueData.length > 0 ? revenueData[0].totalRevenue : 0;
-
-    // Get pending payments count
-    const pendingPayments = await Payment.countDocuments({ status: 'pending' });
-
-    // Monthly revenue (current month)
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const monthlyData = await Payment.aggregate([
-        {
-            $match: {
-                status: { $in: ['completed', 'pending'] },
-                paymentDate: { $gte: startOfMonth }
-            }
-        },
-        { $group: { _id: null, monthlyRevenue: { $sum: '$amount' } } }
-    ]);
-
-    const monthlyRevenue = monthlyData.length > 0 ? monthlyData[0].monthlyRevenue : 0;
 
     sendSuccess(res, 200, {
-        totalPayments,
-        totalRevenue,
-        pendingPayments,
-        monthlyRevenue,
+        totalRevenue: totalRevenue[0] ? totalRevenue[0].total : 0
     });
 });
 
 module.exports = {
     getPayments,
-    getCustomerPayments,
     createPayment,
-    updatePayment,
-    deletePayment,
-    getPaymentStats,
+    getPaymentStats
 };

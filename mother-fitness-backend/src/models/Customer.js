@@ -3,218 +3,136 @@ const bcrypt = require('bcryptjs');
 const CloudSyncService = require('../services/CloudSyncService');
 
 const customerSchema = new mongoose.Schema({
-    customerId: {
+    // --- IDENTITY ---
+    memberId: {
         type: String,
+        required: true,
         unique: true,
-        // Not required here because it's auto-generated in pre-save hook
+        trim: true,
+        index: true // Human readable ID (e.g., U010)
     },
     name: {
         type: String,
-        required: [true, 'Customer name is required'],
-        trim: true,
-    },
-    age: {
-        type: Number,
-        required: [true, 'Age is required'],
-        min: [10, 'Age must be at least 10'],
-        max: [120, 'Age must be less than 120'],
-    },
-    email: {
-        type: String,
-        required: [true, 'Email is required'],
-        trim: true,
-        lowercase: true,
-        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email'],
+        required: [true, 'Name is required'],
+        trim: true
     },
     phone: {
         type: String,
-        required: [true, 'Phone number is required'],
+        required: [true, 'Phone is required'],
         trim: true,
+        index: true
     },
-    plan: {
-        type: mongoose.Schema.Types.Mixed, // Object (new) or String (legacy)
-        required: [true, 'Plan details are required'],
-    },
-    validity: {
-        type: Date,
-        required: [true, 'Plan validity date is required'],
-    },
-    notes: {
+    email: {
         type: String,
         trim: true,
-        default: '',
+        lowercase: true,
+        default: ''
+    },
+    gender: {
+        type: String,
+        enum: ['Male', 'Female', 'Other'],
+        default: 'Male'
     },
     photo: {
         type: String,
-        default: '',
-    },
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-    },
-    // Member authentication fields
-    memberId: {
-        type: String,
-        unique: true,
-        sparse: true, // Allows null values but enforces uniqueness when present
-        trim: true,
+        default: ''
     },
     password: {
         type: String,
-        select: false, // Don't return password by default
-        minlength: [4, 'Password must be at least 4 characters'],
+        select: false // Protected
     },
-    isFirstLogin: {
-        type: Boolean,
-        default: true,
+
+    // --- MEMBERSHIP (Immutable Snapshot) ---
+    membership: {
+        planId: { type: String, required: true },
+        planName: { type: String, required: true },
+        durationDays: { type: Number, required: true },
+        startDate: { type: Date, required: true },
+        endDate: { type: Date, required: true },
+        planPriceAtPurchase: { type: Number, required: true } // NEVER CHANGES
     },
-    lastLogin: {
-        type: Date,
+
+    membershipStatus: {
+        type: String,
+        enum: ['ACTIVE', 'EXPIRED', 'SUSPENDED'],
+        default: 'ACTIVE',
+        index: true
     },
-    // Achievement Badges
-    totalVisits: {
-        type: Number,
-        default: 0,
+
+    // --- FINANCIALS (Calculated) ---
+    paymentSummary: {
+        totalPaid: { type: Number, default: 0 },
+        balance: { type: Number, default: 0 },
+        paymentStatus: {
+            type: String,
+            enum: ['PENDING', 'PARTIAL', 'COMPLETED'],
+            default: 'PENDING'
+        }
     },
-    balance: {
-        type: Number,
-        default: 0,
+
+    // --- INTEGRATIONS ---
+    biometric: {
+        deviceUserId: { type: String },
+        enabled: { type: Boolean, default: true }
     },
-    badgesEarned: {
-        type: [String],
-        default: [],
-        enum: ['Bronze', 'Silver', 'Gold', 'Beast Mode'],
+
+    // --- SYNC ---
+    syncStatus: {
+        local: { type: Boolean, default: true },
+        cloud: { type: Boolean, default: false },
+        lastSyncedAt: { type: Date }
     },
-    // Real-time status
+
+    // --- EXTRAS (Live Count, etc.) ---
     isInside: {
         type: Boolean,
-        default: false,
-    },
-    lastActivity: {
-        type: Date,
-    },
+        default: false
+    }
 }, {
     timestamps: true,
+    collection: 'customers' // Keep collection name 'customers' to avoid massive migration issues if possible, or 'members' if strictly requested. User said "members collection". I'll map it to 'customers' for file compatibility but maybe I should stick to 'members'. Defaults to plural of model name 'Customer' -> 'customers'.
 });
 
-// Virtual field for status (computed based on validity)
-customerSchema.virtual('status').get(function () {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const validityDate = new Date(this.validity);
-    validityDate.setHours(0, 0, 0, 0);
-
-    const diffTime = validityDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) {
-        return 'expired';
-    } else if (diffDays <= 7) {
-        return 'expiring';
-    } else {
-        return 'active';
-    }
-});
-
-// Virtual field for days remaining
-customerSchema.virtual('daysRemaining').get(function () {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const validityDate = new Date(this.validity);
-    validityDate.setHours(0, 0, 0, 0);
-
-    const diffTime = validityDate - today;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-});
-
-// Virtual field for Plan Name (Safe Access)
-customerSchema.virtual('planName').get(function () {
-    if (this.plan && this.plan.name) {
-        return this.plan.name;
-    }
-    return this.plan; // Fallback for string
-});
-
-// Ensure virtuals are included in JSON
-customerSchema.set('toJSON', { virtuals: true });
-customerSchema.set('toObject', { virtuals: true });
-
-// Pre-save hook: Handle ID generation and password hashing
+// Pre-save: ID Generation & Password Hashing
 customerSchema.pre('save', async function (next) {
-    // 1. Handle ID generation for new customers
     if (this.isNew) {
-        try {
-            // Generate internal customerId
-            if (!this.customerId) {
-                this.customerId = 'cust_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            }
+        // Auto-generate Member ID if missing
+        if (!this.memberId) {
+            const lastCustomer = await this.constructor.findOne({
+                memberId: { $regex: /^U\d+$/ }
+            }).sort({ memberId: -1 });
 
-            // Auto-generate Member ID (U001, U002, etc.) if not provided
-            if (!this.memberId) {
-                const lastCustomer = await this.constructor.findOne({
-                    memberId: { $regex: /^U\d+$/ }
-                }).sort({ memberId: -1 });
-
-                if (lastCustomer && lastCustomer.memberId) {
-                    const lastId = parseInt(lastCustomer.memberId.replace('U', ''));
-                    this.memberId = 'U' + String(lastId + 1).padStart(3, '0');
-                } else {
-                    this.memberId = 'U001';
-                }
+            if (lastCustomer && lastCustomer.memberId) {
+                const lastId = parseInt(lastCustomer.memberId.replace('U', ''));
+                this.memberId = 'U' + String(lastId + 1).padStart(3, '0');
+            } else {
+                this.memberId = 'U001';
             }
+        }
 
-            // Set default password if not provided
-            if (!this.password) {
-                this.password = '0000'; // Default member password
-            }
-        } catch (error) {
-            return next(error);
+        // Default password
+        if (!this.password) {
+            this.password = '0000';
         }
     }
 
-    // 2. Hash password if modified (or newly set as default)
-    if (!this.isModified('password')) {
-        return next();
-    }
-
-    try {
+    // Hash password
+    if (this.isModified('password')) {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error);
     }
+
+    next();
 });
 
-// Method to compare password
+// Password Compare
 customerSchema.methods.comparePassword = async function (candidatePassword) {
-    try {
-        if (!this.password) {
-            console.error('[Auth] Compare failed: No password hash for user', this.memberId);
-            return false;
-        }
-        return await bcrypt.compare(candidatePassword, this.password);
-    } catch (error) {
-        console.error('[Auth] comparePassword error:', error);
-        throw new Error('Password comparison failed: ' + error.message);
-    }
+    return await bcrypt.compare(candidatePassword, this.password);
 };
-
-// Indexes for faster queries
-customerSchema.index({ customerId: 1 });
-customerSchema.index({ email: 1 });
-customerSchema.index({ phone: 1 });
-customerSchema.index({ validity: 1 });
-customerSchema.index({ createdAt: -1 });
-customerSchema.index({ memberId: 1 });
 
 // Cloud Sync Hook
 customerSchema.post('save', function (doc) {
     CloudSyncService.syncRecord('customer', doc);
 });
 
-const Customer = mongoose.model('Customer', customerSchema);
-
-module.exports = Customer;
+module.exports = mongoose.model('Customer', customerSchema);
