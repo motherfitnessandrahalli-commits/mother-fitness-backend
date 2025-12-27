@@ -6,6 +6,7 @@ const Payment = require('./Payment');
 const TimelineEvent = require('./TimelineEvent');
 const AdminProfile = require('./AdminProfile');
 const Announcement = require('./Announcement');
+const Plan = require('./Plan');
 
 module.exports = {
     User,
