@@ -64,7 +64,9 @@ class MemberApp {
             // Update member info
             document.getElementById('memberName').textContent = this.memberProfile.name;
             document.getElementById('memberId').textContent = this.memberProfile.memberId;
-            document.getElementById('planType').textContent = this.memberProfile.planName || this.memberProfile.plan; // Use Virtual or Fallback
+            // SINGLE SOURCE OF TRUTH: Access nested membership object
+            const membership = this.memberProfile.membership || {};
+            document.getElementById('planType').textContent = membership.planName || this.memberProfile.plan || 'No Plan';
 
             // Update member avatar with photo if available
             const avatarDiv = document.querySelector('.member-avatar');
@@ -75,13 +77,16 @@ class MemberApp {
             }
 
             // Calculate and display days remaining
-            const status = this.calculateMembershipStatus(this.memberProfile.validity);
+            // SINGLE SOURCE OF TRUTH: Use membership.endDate
+            const expiryDate = membership.endDate ? membership.endDate : this.memberProfile.validity;
+            const status = this.calculateMembershipStatus(expiryDate);
+
             document.getElementById('daysRemaining').textContent = status.daysRemaining;
-            document.getElementById('expiryDate').textContent = new Date(this.memberProfile.validity).toLocaleDateString('en-IN', {
+            document.getElementById('expiryDate').textContent = expiryDate ? new Date(expiryDate).toLocaleDateString('en-IN', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric'
-            });
+            }) : '--';
 
             // Update status badge and card
             const badge = document.getElementById('statusBadge');
@@ -258,6 +263,8 @@ class MemberApp {
     }
 
     calculateMembershipStatus(validity) {
+        if (!validity) return { daysRemaining: 0, text: 'No Plan', class: 'expired' };
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const validityDate = new Date(validity);
