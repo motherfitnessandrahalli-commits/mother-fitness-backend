@@ -7,16 +7,42 @@ const attendanceSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    customerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Customer',
+        index: true
+    },
+    customerName: {
+        type: String,
+        trim: true
+    },
     timestamp: {
         type: Date,
         required: true,
         default: Date.now,
         index: true
     },
+    date: {
+        type: String, // YYYY-MM-DD for reporting
+        index: true
+    },
+    time: {
+        type: String // HH:MM:SS
+    },
     direction: {
         type: String,
         enum: ['IN', 'OUT'],
-        required: true
+        required: true,
+        default: 'IN'
+    },
+    membershipStatus: {
+        type: String,
+        enum: ['active', 'expiring', 'expired', 'ACTIVE', 'EXPIRED', 'EXPIRING', 'SUSPENDED'],
+    },
+    markedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
     },
     deviceId: {
         type: String,
@@ -31,9 +57,23 @@ const attendanceSchema = new mongoose.Schema({
         type: String,
         enum: ['PENDING', 'SYNCED'],
         default: 'PENDING'
+    },
+    attendanceId: {
+        type: String,
+        unique: true,
+        sparse: true
     }
 }, {
     timestamps: true
+});
+
+// Pre-save: Auto-generate attendanceId
+attendanceSchema.pre('save', function (next) {
+    if (!this.attendanceId) {
+        // Generate a simple unique ID: A + Timestamp + Random
+        this.attendanceId = 'A' + Date.now() + Math.floor(Math.random() * 1000);
+    }
+    next();
 });
 
 // Cloud Sync Hook

@@ -49,11 +49,14 @@ const verifyAccess = asyncHandler(async (req, res, next) => {
 
         if (!alreadyMarked) {
             await Attendance.create({
+                memberId: customer.memberId,
                 customerId: customer._id,
                 customerName: customer.name,
                 date: todayStr,
                 time: getLocalTimeString(),
+                direction: 'IN',
                 membershipStatus: status,
+                source: 'BIOMETRIC',
                 markedBy: req.user ? req.user.id : null // Backend might be system triggered
             });
             customer.totalVisits += 1;

@@ -96,21 +96,78 @@ class AccessControlService {
     async handleEntry(customer, eventData) {
         const todayStr = getLocalDateString();
         const now = new Date();
+        const zktecoService = require('./ZKTecoService'); // Lazy load to avoid circular dep
 
-        // 1. Check Membership Status
-        const status = customer.status; // Uses virtual field
-        if (status === 'expired') {
-            logger.warn(`🚫 Entry Denied: ${customer.name} - Membership Expired`);
+        // 1. Calculate Membership Days Remaining
+        // We need to parse validity date strictly
+        // Assuming customer.validity is a Date object or ISO string
+        let daysRemaining = -1;
+
+        if (customer.validity) {
+            const validityDate = new Date(customer.validity);
+            validityDate.setHours(23, 59, 59, 999); // End of that day
+
+            const diffTime = validityDate - now;
+            daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        // 2. Determine Action based on Expiry
+        let accessGranted = false;
+        let message = '';
+        let voice = '';
+
+        // DEBUG LOG
+        logger.info(`[Access] ${customer.name}: Days Remaining = ${daysRemaining}`);
+
+        if (daysRemaining <= 0) {
+            // EXPIRED
+            logger.warn(`🚫 Entry Denied: ${customer.name} - Expired`);
+            message = 'Access Denied: Membership Expired';
+            voice = 'Access Denied. Your membership has expired. Please renew at reception.';
+            accessGranted = false;
+        }
+        else if (daysRemaining === 1) {
+            // LAST DAY
+            logger.warn(`⚠ Entry Allowed (Last Day): ${customer.name}`);
+            message = 'Welcome! Expires TODAY (1 Day left)';
+            voice = `Welcome ${customer.name}. Your membership expires today. Please renew.`;
+            accessGranted = true;
+        }
+        else if (daysRemaining <= 3) {
+            // WARNING 2-3 DAYS
+            logger.warn(`⚠ Entry Allowed (Expiring): ${customer.name} - ${daysRemaining} days left`);
+            message = `Welcome! Expires in ${daysRemaining} days`;
+            voice = `Welcome ${customer.name}. Your membership expires in ${daysRemaining} days.`;
+            accessGranted = true;
+        }
+        else {
+            // NORMAL ENTRY
+            logger.info(`✅ Entry Allowed: ${customer.name}`);
+            message = 'Welcome to Mother Fitness';
+            voice = `Welcome ${customer.name}`;
+
+            // Balance Check Override
+            if (customer.balance > 0) {
+                message = `Welcome! Balance Due: ₹${customer.balance}`;
+                voice = `Welcome ${customer.name}. You have a pending balance.`;
+            }
+
+            accessGranted = true;
+        }
+
+        // 3. Handle Decision
+        if (!accessGranted) {
             const result = {
                 customer,
                 reason: 'Membership Expired',
-                voice: 'Membership expired. Please see reception.'
+                voice,
+                message
             };
             this.emitAccessResult('denied', result);
             return { success: false, status: 'denied', ...result };
         }
 
-        // 2. Anti-Passback Check
+        // 4. Anti-Passback Check
         if (customer.isInside) {
             logger.warn(`🚫 Anti-Passback: ${customer.name} is already inside.`);
             const result = {
@@ -122,23 +179,15 @@ class AccessControlService {
             return { success: false, status: 'denied', ...result };
         }
 
-        // 3. ALLOW ENTRY
-        logger.info(`✅ Entry Allowed: ${customer.name}`);
+        // 5. GRANT ACCESS
 
-        // IMPORTANT: Door Control Architecture
-        // =====================================
-        // Industry Standard (ZKTeco with built-in relay):
-        //   - Backend returns decision: "ALLOW" or "DENY"
-        //   - ZKTeco device controls relay based on decision
-        //   - Device cuts power to maglock for 3 seconds
-        //   - No direct hardware control from software needed
-        //
-        // Optional (Arduino/separate relay controller):
-        //   - The hardwareService.openDoor() below is ONLY for
-        //     separate door controllers via serial port
-        //   - NOT needed when using ZKTeco's built-in relay
-        //   - Can be disabled if not using external controller
-        await hardwareService.openDoor(); // Optional: External door controller only
+        // Open Door via ZKTeco Device (if IP is available)
+        if (eventData.deviceIp && eventData.deviceIp !== 'manual') {
+            await zktecoService.unlockDevice(eventData.deviceIp);
+        } else {
+            // Fallback for manual or testing
+            logger.info('🔓 Manual/Test Entry - No device IP to send unlock command');
+        }
 
         // Update Customer Status
         customer.isInside = true;
@@ -149,12 +198,14 @@ class AccessControlService {
         // Create Attendance Log
         await Attendance.create({
             customerId: customer._id,
+            memberId: customer.memberId, // Required field
             customerName: customer.name,
             date: todayStr,
             time: getLocalTimeString(),
             timestamp: now,
-            membershipStatus: status,
+            membershipStatus: customer.membershipStatus,
             type: 'IN',
+            direction: 'IN', // Required by schema
             deviceId: eventData.deviceIp || 'ZKTeco-IN'
         });
 
@@ -163,16 +214,8 @@ class AccessControlService {
             customer._id,
             'CHECK_IN',
             'Checked In (Entry)',
-            `Entered gym via ${eventData.deviceIp || 'IN Device'}. Status: ${status}`
+            `Entered gym via ${eventData.deviceIp || 'IN Device'}. Msg: ${message}`
         );
-
-        let message = 'Membership Active';
-        let voice = `Welcome ${customer.name}`;
-
-        if (customer.balance > 0) {
-            message = `Membership Active. Balance Due: ₹${customer.balance}`;
-            voice = `Welcome ${customer.name}. You have a balance of ${customer.balance} rupees. Please pay at reception.`;
-        }
 
         logger.info(`🔔 [AccessControl] Emitting ALLOWED for ${customer.name}`);
         const result = { customer, type: 'IN', message, voice };
@@ -186,27 +229,31 @@ class AccessControlService {
     async handleExit(customer, eventData) {
         const todayStr = getLocalDateString();
         const now = new Date();
+        const zktecoService = require('./ZKTecoService');
 
         logger.info(`🚪 Exit Triggered: ${customer.name}`);
 
-        // Exit always opens (safety/legal requirement)
-        // ZKTeco device controls relay, this is optional for external controllers
-        await hardwareService.openDoor(); // Optional: External door controller only
+        // Unlock Exit Door
+        if (eventData.deviceIp && eventData.deviceIp !== 'manual') {
+            await zktecoService.unlockDevice(eventData.deviceIp);
+        }
 
         // Update Customer Status
         customer.isInside = false;
         customer.lastActivity = now;
         await customer.save();
 
-        // Create Attendance Log (to track stay duration)
+        // Create Attendance Log
         await Attendance.create({
             customerId: customer._id,
+            memberId: customer.memberId, // Required field
             customerName: customer.name,
             date: todayStr,
             time: getLocalTimeString(),
             timestamp: now,
-            membershipStatus: customer.status,
+            membershipStatus: customer.membershipStatus, // Use actual status field, not derived 'status' if possible, or fallback
             type: 'OUT',
+            direction: 'OUT', // Required by schema
             deviceId: eventData.deviceIp || 'ZKTeco-OUT'
         });
 

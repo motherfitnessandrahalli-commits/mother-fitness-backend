@@ -26,7 +26,7 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const activeCustomers = await Customer.find({ validity: { $gte: today } });
+    const activeCustomers = await Customer.find({ 'membership.endDate': { $gte: today } });
     const activeCustomersCount = activeCustomers.length;
 
     // 2. Churn Risk (Members who haven't visited in 10+ days) - Basic rule
@@ -71,7 +71,7 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const revenueLeakageMembers = await Customer.aggregate([
-        { $match: { validity: { $lt: today } } },
+        { $match: { 'membership.endDate': { $lt: today } } },
         {
             $lookup: {
                 from: 'attendances',
@@ -84,7 +84,7 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
         { $match: { 'recentVisits.0': { $exists: true } } },
         {
             $project: {
-                name: 1, phone: 1, memberId: 1, validity: 1,
+                name: 1, phone: 1, memberId: 1, 'membership.endDate': 1,
                 visitCount: { $size: '$recentVisits' }
             }
         }
@@ -109,7 +109,7 @@ const getBusinessHealth = asyncHandler(async (req, res, next) => {
 
     const activeVisitorsCount = await Customer.countDocuments({
         _id: { $in: activeVisitorsIds },
-        validity: { $gte: today }
+        'membership.endDate': { $gte: today }
     });
 
     const utilizationRate = activeCustomersCount > 0

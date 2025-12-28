@@ -88,63 +88,83 @@ const getCustomer = asyncHandler(async (req, res, next) => {
  * @route   POST /api/customers
  */
 const createCustomer = asyncHandler(async (req, res, next) => {
-    const {
-        name, phone, email, gender,
-        planId, planName, durationDays, price, startDate, // Membership details
+    let {
+        name, phone, email, gender, age,
+        planId, planName, durationDays, price, startDate, // Legacy/Detailed Membership details
+        plan, validity, // Frontend simplified format
+        memberId,
         initialPayment // Optional: { amount, method }
     } = req.body;
 
-    // Validate Core Identify
-    if (!name || !phone) throw new AppError('Name and Phone are required', 400);
-
     // 1. Construct Membership
-    const effectiveStartDate = startDate ? new Date(startDate) : new Date();
-    const duration = durationDays ? parseInt(durationDays) : 30; // Default 30
+    // Support frontend simplified format (plan string and validity date)
+    if (plan && !planName) planName = plan;
 
-    const effectiveEndDate = new Date(effectiveStartDate);
-    effectiveEndDate.setDate(effectiveEndDate.getDate() + duration);
+    const effectiveStartDate = startDate ? new Date(startDate) : new Date();
+    let effectiveEndDate;
+
+    if (validity) {
+        effectiveEndDate = new Date(validity);
+    } else {
+        const duration = durationDays ? parseInt(durationDays) : 30; // Default 30
+        effectiveEndDate = new Date(effectiveStartDate);
+        effectiveEndDate.setDate(effectiveEndDate.getDate() + duration);
+    }
 
     const membership = {
         planId: planId || 'CUSTOM',
         planName: planName || 'Monthly',
-        durationDays: duration,
+        durationDays: durationDays || 30,
         startDate: effectiveStartDate,
         endDate: effectiveEndDate,
         planPriceAtPurchase: price ? Number(price) : 0
     };
 
     // 2. Create Member
+    // Note: memberId generation is handled by Customer schema pre-validate hook if missing or empty
+
+    // Determine initial balance
+    // If balance is explicitly provided in request, use it
+    // Otherwise, default to the plan price (customer owes the full amount)
+    const initialBalance = req.body.balance !== undefined ? Number(req.body.balance) : membership.planPriceAtPurchase;
+
     const customer = await Customer.create({
         name,
         phone,
         email,
         gender,
+        age,
+        memberId: memberId && memberId.trim() !== '' ? memberId.trim() : undefined,
         membership,
-        membershipStatus: 'ACTIVE', // Default active on create
+        membershipStatus: 'ACTIVE',
         paymentSummary: {
             totalPaid: 0,
-            balance: membership.planPriceAtPurchase,
-            paymentStatus: 'PENDING'
+            balance: initialBalance,
+            paymentStatus: initialBalance > 0 ? 'PENDING' : 'COMPLETED'
         }
     });
 
     // 3. Handle Initial Payment
     let paymentRec = null;
     if (initialPayment && initialPayment.amount > 0) {
-        paymentRec = await Payment.create({
-            memberId: customer.memberId,
-            amount: initialPayment.amount,
-            method: initialPayment.method || 'CASH',
-            paymentDate: new Date(),
-            receivedBy: req.user ? req.user.name : 'admin'
-        });
+        try {
+            paymentRec = await Payment.create({
+                memberId: customer.memberId,
+                amount: initialPayment.amount,
+                method: initialPayment.method || 'CASH',
+                paymentDate: new Date(),
+                receivedBy: req.user ? req.user.name : 'admin'
+            });
 
-        // Recalculate will update paymentSummary
-        await PaymentService.recalculatePaymentSummary(customer.memberId);
+            // Recalculate will update paymentSummary
+            await PaymentService.recalculatePaymentSummary(customer.memberId);
 
-        // Reload customer to get updated summary
-        const updated = await Customer.findById(customer._id);
-        Object.assign(customer, updated.toObject());
+            // Reload customer to get updated summary
+            const updated = await Customer.findById(customer._id);
+            Object.assign(customer, updated.toObject());
+        } catch (payErr) {
+            console.error(`[Customer Controller] Initial payment failed, but customer was created:`, payErr.message);
+        }
     }
 
     sendSuccess(res, 201, { customer, payment: paymentRec }, 'Member registered successfully');
@@ -167,8 +187,42 @@ const updateCustomer = asyncHandler(async (req, res, next) => {
     if (name) customer.name = name;
     if (phone) customer.phone = phone;
     if (email) customer.email = email;
+    if (req.body.age) customer.age = req.body.age;
+    if (req.body.notes !== undefined) customer.notes = req.body.notes;
 
-    // Handle Renewal (New Membership Cycle)
+    // Direct Membership Edit (from Edit Profile modal)
+    if (req.body.plan || req.body.validity) {
+        if (!customer.membership) customer.membership = {};
+
+        if (req.body.plan) {
+            customer.membership.planName = req.body.plan;
+        }
+
+        if (req.body.validity) {
+            customer.membership.endDate = new Date(req.body.validity);
+
+            // Re-evaluate membership status based on new validity
+            const now = new Date();
+            if (customer.membership.endDate < now) {
+                customer.membershipStatus = 'EXPIRED';
+            } else {
+                customer.membershipStatus = 'ACTIVE';
+            }
+        }
+    }
+
+    // Manual Balance Update
+    if (req.body.balance !== undefined) {
+        if (!customer.paymentSummary) customer.paymentSummary = {};
+        const newBalance = Number(req.body.balance);
+        customer.paymentSummary.balance = newBalance;
+        // Update payment status based on balance
+        customer.paymentSummary.paymentStatus = newBalance > 0 ?
+            (customer.paymentSummary.totalPaid > 0 ? 'PARTIAL' : 'PENDING') :
+            'COMPLETED';
+    }
+
+    // Handle Renewal (Full New Membership Cycle)
     if (renewPlan) {
         const startDate = renewPlan.startDate ? new Date(renewPlan.startDate) : new Date();
         const duration = renewPlan.duration ? parseInt(renewPlan.duration) : 30;

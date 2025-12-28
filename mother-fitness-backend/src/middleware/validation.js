@@ -36,7 +36,7 @@ const customerSchemas = {
         isFirstLogin: Joi.boolean().optional(),
         initialPayment: Joi.object({
             amount: Joi.number().required(),
-            paymentMethod: Joi.string().valid('Cash', 'UPI', 'Card', 'Bank Transfer').default('Cash'),
+            method: Joi.string().valid('CASH', 'UPI', 'CARD', 'BANK_TRANSFER').default('CASH'),
             receiptNumber: Joi.string().allow('').optional()
         }).optional(),
     }),

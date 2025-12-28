@@ -19,13 +19,18 @@ const getDashboardStats = asyncHandler(async (req, res, next) => {
     // Expiring: today <= validity <= nextWeek
     // Expired: validity < today
 
-    const activeCustomers = await Customer.countDocuments({ validity: { $gt: nextWeek } });
-    const expiringCustomers = await Customer.countDocuments({ validity: { $gte: today, $lte: nextWeek } });
-    const expiredCustomers = await Customer.countDocuments({ validity: { $lt: today } });
+    const activeCustomers = await Customer.countDocuments({ 'membership.endDate': { $gt: nextWeek } });
+    const expiringCustomers = await Customer.countDocuments({ 'membership.endDate': { $gte: today, $lte: nextWeek } });
+    const expiredCustomers = await Customer.countDocuments({ 'membership.endDate': { $lt: today } });
 
     // 2. Attendance Stats (Today)
-    const todayStr = today.toISOString().split('T')[0];
-    const todayAttendance = await Attendance.countDocuments({ date: todayStr });
+    const tonight = new Date(today);
+    tonight.setHours(23, 59, 59, 999);
+
+    // Querying timestamp within today's range
+    const todayAttendance = await Attendance.countDocuments({
+        timestamp: { $gte: today, $lte: tonight }
+    });
 
     // 3. New vs Renewing (Current Month)
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -47,8 +52,8 @@ const getDashboardStats = asyncHandler(async (req, res, next) => {
         {
             $lookup: {
                 from: 'customers',
-                localField: 'customerId',
-                foreignField: '_id',
+                localField: 'memberId',
+                foreignField: 'memberId',
                 as: 'customer'
             }
         },
@@ -62,7 +67,7 @@ const getDashboardStats = asyncHandler(async (req, res, next) => {
         },
         {
             $group: {
-                _id: '$customerId'
+                _id: '$memberId'
             }
         },
         {
@@ -95,7 +100,7 @@ const getDashboardStats = asyncHandler(async (req, res, next) => {
  */
 const getPlanPopularity = asyncHandler(async (req, res, next) => {
     const stats = await Customer.aggregate([
-        { $group: { _id: '$plan', count: { $sum: 1 } } },
+        { $group: { _id: '$membership.planName', count: { $sum: 1 } } },
         { $sort: { count: -1 } }
     ]);
 
@@ -226,8 +231,8 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
     const dailyProfit = await Payment.aggregate([
         {
             $match: {
-                paymentDate: { $gte: dailyStart, $lte: dailyEnd },
-                status: { $in: ['completed', 'pending'] }
+                paymentDate: { $gte: dailyStart, $lte: dailyEnd }
+                // Note: Payment schema does not have a status field
             }
         },
         {
@@ -245,8 +250,7 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
     const weeklyProfit = await Payment.aggregate([
         {
             $match: {
-                paymentDate: { $gte: weeklyStart, $lte: dailyEnd },
-                status: { $in: ['completed', 'pending'] }
+                paymentDate: { $gte: weeklyStart, $lte: dailyEnd }
             }
         },
         {
@@ -264,8 +268,7 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
     const monthlyProfit = await Payment.aggregate([
         {
             $match: {
-                paymentDate: { $gte: monthlyStart, $lte: monthlyEnd },
-                status: { $in: ['completed', 'pending'] }
+                paymentDate: { $gte: monthlyStart, $lte: monthlyEnd }
             }
         },
         {
@@ -283,8 +286,7 @@ const getProfitMetrics = asyncHandler(async (req, res, next) => {
     const yearlyProfit = await Payment.aggregate([
         {
             $match: {
-                paymentDate: { $gte: yearlyStart, $lte: yearlyEnd },
-                status: { $in: ['completed', 'pending'] }
+                paymentDate: { $gte: yearlyStart, $lte: yearlyEnd }
             }
         },
         {

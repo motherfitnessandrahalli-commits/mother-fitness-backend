@@ -6,10 +6,10 @@ const customerSchema = new mongoose.Schema({
     // --- IDENTITY ---
     memberId: {
         type: String,
-        required: true,
+        required: [true, 'Member ID is required'],
         unique: true,
         trim: true,
-        index: true // Human readable ID (e.g., U010)
+        index: true
     },
     name: {
         type: String,
@@ -40,6 +40,14 @@ const customerSchema = new mongoose.Schema({
     password: {
         type: String,
         select: false // Protected
+    },
+    age: {
+        type: Number
+    },
+    notes: {
+        type: String,
+        trim: true,
+        default: ''
     },
 
     // --- MEMBERSHIP (Immutable Snapshot) ---
@@ -90,23 +98,62 @@ const customerSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true,
-    collection: 'customers' // Keep collection name 'customers' to avoid massive migration issues if possible, or 'members' if strictly requested. User said "members collection". I'll map it to 'customers' for file compatibility but maybe I should stick to 'members'. Defaults to plural of model name 'Customer' -> 'customers'.
+    collection: 'customers',
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
-// Pre-save: ID Generation & Password Hashing
+// --- VIRTUALS ---
+customerSchema.virtual('status').get(function () {
+    if (this.membershipStatus === 'EXPIRED' || this.membershipStatus === 'SUSPENDED') {
+        return this.membershipStatus.toLowerCase();
+    }
+
+    const now = new Date();
+    const endDate = new Date(this.membership.endDate);
+
+    if (endDate < now) {
+        return 'expired';
+    }
+
+    // Expiring within 7 days
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    if (endDate <= nextWeek) {
+        return 'expiring';
+    }
+
+    return 'active';
+});
+
+// Virtual for backward compatibility with 'validity'
+customerSchema.virtual('validity').get(function () {
+    return this.membership ? this.membership.endDate : null;
+});
+
+// Virtual for backward compatibility with 'plan'
+customerSchema.virtual('plan').get(function () {
+    return this.membership ? this.membership.planName : null;
+});
+
+// Pre-save: ID Generation and Password Hashing
 customerSchema.pre('save', async function (next) {
     if (this.isNew) {
         // Auto-generate Member ID if missing
-        if (!this.memberId) {
-            const lastCustomer = await this.constructor.findOne({
-                memberId: { $regex: /^U\d+$/ }
-            }).sort({ memberId: -1 });
+        if (!this.memberId || this.memberId.trim() === '') {
+            try {
+                const lastCustomer = await this.constructor.findOne({
+                    memberId: { $regex: /^U\d+$/ }
+                }).sort({ memberId: -1 });
 
-            if (lastCustomer && lastCustomer.memberId) {
-                const lastId = parseInt(lastCustomer.memberId.replace('U', ''));
-                this.memberId = 'U' + String(lastId + 1).padStart(3, '0');
-            } else {
-                this.memberId = 'U001';
+                if (lastCustomer && lastCustomer.memberId) {
+                    const lastId = parseInt(lastCustomer.memberId.replace('U', ''));
+                    this.memberId = 'U' + String(lastId + 1).padStart(3, '0');
+                } else {
+                    this.memberId = 'U001';
+                }
+            } catch (err) {
+                return next(err);
             }
         }
 
@@ -117,7 +164,7 @@ customerSchema.pre('save', async function (next) {
     }
 
     // Hash password
-    if (this.isModified('password')) {
+    if (this.isModified('password') && this.password) {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
     }

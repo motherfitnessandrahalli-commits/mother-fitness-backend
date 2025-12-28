@@ -36,6 +36,7 @@ const API_CONFIG = {
         PLAN_POPULARITY: '/api/analytics/plans',
         AGE_DEMOGRAPHICS: '/api/analytics/demographics',
         BUSINESS_GROWTH: '/api/analytics/growth',
+        PROFIT_METRICS: '/api/analytics/profits',
 
         // Upload
         UPLOAD_PHOTO: '/api/upload',
@@ -292,6 +293,10 @@ class API {
 
     async getBusinessGrowth() {
         return await this.request(API_CONFIG.ENDPOINTS.BUSINESS_GROWTH);
+    }
+
+    async getProfitMetrics() {
+        return await this.request(API_CONFIG.ENDPOINTS.PROFIT_METRICS);
     }
 
     // ===================================

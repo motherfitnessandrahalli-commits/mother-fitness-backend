@@ -36,11 +36,14 @@ const markAttendance = asyncHandler(async (req, res, next) => {
 
     // 3. Create attendance record
     const attendance = await Attendance.create({
+        memberId: customer.memberId,
         customerId: customer._id,
         customerName: customer.name,
         date: todayStr,
         time: getLocalTimeString(),
-        membershipStatus: customer.status, // Uses virtual field from Customer model
+        direction: 'IN', // Manual marking defaults to IN
+        membershipStatus: customer.membershipStatus, // Align with schema's field name
+        source: 'MANUAL',
         markedBy: req.user ? req.user.id : null
     });
 

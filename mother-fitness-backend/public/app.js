@@ -38,13 +38,18 @@ class Customer {
     }
 
     getDaysRemaining() {
+        if (!this.validity) return 0;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const validityDate = new Date(this.validity);
         validityDate.setHours(0, 0, 0, 0);
 
         const diffTime = validityDate - today;
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        // If it expires today, we return 1 (Today) or 0 (Expired at midnight)
+        // Based on business logic: valid until end of day of 'validity'
+        return diffDays;
     }
 }
 
@@ -269,20 +274,6 @@ class GymApp {
                     statusBox.textContent = 'READY TO SCAN';
                     statusBox.style.background = '#334155';
                 }, 3000);
-            }
-        });
-
-        // Legacy listeners (fallback)
-        this.socket.on('access:granted', (data) => {
-            if (!data.processed) { // Avoid double handling if result was already sent
-                this.biometricSystem.setUIState('granted', data.customer);
-                this.updateAttendanceStats();
-            }
-        });
-
-        this.socket.on('access:denied', (data) => {
-            if (!data.processed) {
-                this.biometricSystem.setUIState('denied', data.customer, data.message);
             }
         });
     }
@@ -1255,7 +1246,10 @@ class GymApp {
                 c.paymentSummary?.balance !== undefined ? c.paymentSummary.balance : (c.balance || 0)
             ));
 
+            console.log(`Loaded ${this.customers.length} customers.`);
             this.render();
+            // Also update dashboard stats
+            this.renderStats();
         } catch (error) {
             console.error('Failed to load customers:', error);
             this.showNotification('error', 'Load Error', 'Failed to load customer list');
@@ -1272,9 +1266,6 @@ class GymApp {
 
     // Customer CRUD Operations
     async addCustomer(customerData) {
-        // Generate member credentials (ID is now handled by backend)
-        const password = this.generateTempPassword();
-
         const payload = {
             name: customerData.name,
             age: customerData.age,
@@ -1284,11 +1275,15 @@ class GymApp {
             validity: customerData.validity,
             notes: customerData.notes,
             photo: this.currentPhoto,
-            memberId: customerData.memberId || '', // Use custom ID if provided
-            password: password,
+            password: '0000', // Default password
             isFirstLogin: true,
             balance: customerData.balance || 0
         };
+
+        // Only include memberId if explicitly provided (not empty)
+        if (customerData.memberId && customerData.memberId.trim() !== '') {
+            payload.memberId = customerData.memberId.trim();
+        }
 
         // Add Initial Payment if provided
         if (customerData.initialPayment) {
@@ -1322,13 +1317,19 @@ class GymApp {
             const msg = `
                 <strong>${c.name}</strong> added successfully!<br><br>
                 <strong>Member ID:</strong> ${c.memberId}<br>
-                <strong>Password:</strong> ${password}<br><br>
+                <strong>Password:</strong> 0000<br><br>
                 <em>Please share these credentials with the member.</em>
             `;
             // Use persistent notification
             this.addHistoryNotification('success', 'Customer Added', msg);
 
             this.render();
+
+            // Close modal if open
+            this.closeCustomerModal();
+        } catch (error) {
+            console.error('Add Customer Error:', error);
+            this.showNotification('error', 'Add Failed', error.message || 'Could not add customer');
         } finally {
             this.setLoading(false);
         }
@@ -1370,13 +1371,18 @@ class GymApp {
                     c.notes,
                     c.photo || '',
                     new Date(c.createdAt),
-                    c.memberId || c.id // fallbacks
+                    c.memberId || c.id, // fallbacks
+                    c.paymentSummary?.balance !== undefined ? c.paymentSummary.balance : (c.balance || 0)
                 );
 
                 this.customers[index] = updatedCustomer;
                 this.currentPhoto = '';
                 this.showNotification('success', 'Customer Updated', `${updatedCustomer.name}'s information has been updated!`);
+
+                // CRITICAL: Refresh everything
                 this.render();
+                this.renderStats();
+                this.updateOccupancy();
             } catch (error) {
                 console.error('Update failed:', error);
                 this.showNotification('error', 'Update Failed', error.message || 'Could not update customer');
@@ -1884,20 +1890,23 @@ class GymApp {
             return;
         }
 
+        // Find the customer to get their memberId
+        const customer = this.customers.find(c => c.id === customerId || c._id === customerId);
+        if (!customer) {
+            this.showNotification('error', 'Error', 'Customer not found');
+            return;
+        }
+
         const paymentData = {
-            customerId,
-            amount: document.getElementById('payment-amount').value,
+            memberId: customer.memberId, // Send memberId, not customerId
+            amount: parseFloat(document.getElementById('payment-amount').value),
             paymentDate: document.getElementById('payment-date').value,
-            paymentMethod: document.getElementById('payment-method').value,
-            planType: document.getElementById('payment-plan').value,
-            receiptNumber: document.getElementById('payment-receipt').value,
-            notes: document.getElementById('payment-notes').value,
-            status: 'completed',
-            newBalance: document.getElementById('payment-new-balance').value
+            method: document.getElementById('payment-method').value, // Use 'method', not 'paymentMethod'
+            notes: document.getElementById('payment-notes').value
         };
 
         try {
-            console.log('Submitting payment for customer:', customerId);
+            console.log('Submitting payment for customer:', customer.memberId);
             const response = await this.api.createPayment(paymentData);
             console.log('Payment response:', response.data);
 
@@ -1907,52 +1916,44 @@ class GymApp {
             // Refresh Profit Metrics immediately
             this.loadProfitMetrics();
 
-            // Update local customer state immediately
-            if (response.data.customer) {
-                const updatedCustomer = response.data.customer;
-                console.log('Updated customer from backend:', updatedCustomer);
+            // Update local customer state with the returned member data
+            if (response.data.member) {
+                const updatedMember = response.data.member;
+                console.log('Updated customer from backend:', updatedMember);
 
                 const index = this.customers.findIndex(c =>
-                    c.id === updatedCustomer._id || c.id === customerId
+                    c.id === updatedMember._id || c.memberId === updatedMember.memberId
                 );
 
                 console.log('Found customer at index:', index);
 
                 if (index !== -1) {
-                    console.log('Old plan:', this.customers[index].plan, 'validity:', this.customers[index].validity);
-
                     this.customers[index] = new Customer(
-                        updatedCustomer._id,
-                        updatedCustomer.name,
-                        updatedCustomer.age,
-                        updatedCustomer.email,
-                        updatedCustomer.phone,
-                        updatedCustomer.plan,
-                        updatedCustomer.validity.split('T')[0],
-                        updatedCustomer.notes,
-                        updatedCustomer.photo || this.customers[index].photo,
-                        new Date(updatedCustomer.createdAt),
-                        updatedCustomer.memberId,
-                        updatedCustomer.balance || 0
+                        updatedMember._id,
+                        updatedMember.name,
+                        updatedMember.age,
+                        updatedMember.email,
+                        updatedMember.phone,
+                        updatedMember.membership?.planName || updatedMember.plan || 'Unknown',
+                        updatedMember.membership?.endDate ? updatedMember.membership.endDate.split('T')[0] : (updatedMember.validity ? updatedMember.validity.split('T')[0] : new Date().toISOString().split('T')[0]),
+                        updatedMember.notes,
+                        updatedMember.photo || this.customers[index].photo,
+                        new Date(updatedMember.createdAt),
+                        updatedMember.memberId,
+                        updatedMember.paymentSummary?.balance ?? 0
                     );
 
-                    console.log('New plan:', this.customers[index].plan, 'validity:', this.customers[index].validity);
-                    console.log('Calling render()...');
+                    console.log('Updated customer balance:', this.customers[index].balance);
                     this.render();
-                    console.log('Render completed');
+                    this.renderStats();
+                    this.updateOccupancy();
                 } else {
                     console.warn('Customer not found in local array');
                 }
             }
 
-            // Add payment to local array
-            if (response.data.payment) {
-                this.payments.unshift(response.data.payment);
-                const paymentView = document.getElementById('payment-view');
-                if (paymentView && paymentView.style.display !== 'none') {
-                    this.renderPayments(this.payments);
-                }
-            }
+            // Reload payments to get the enriched data with customer name, method, plan
+            await this.loadPayments();
         } catch (error) {
             console.error('Payment submission error:', error);
             this.showNotification('error', 'Error', error.message || 'Failed to save payment');
@@ -2208,9 +2209,9 @@ class GymApp {
         });
 
         // Customer form submit
-        document.getElementById('customer-form').addEventListener('submit', (e) => {
+        document.getElementById('customer-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            this.handleFormSubmit();
+            await this.handleFormSubmit();
         });
 
         // Delete confirmation
@@ -2547,7 +2548,7 @@ class GymApp {
         this.deleteCustomerId = null;
     }
 
-    handleFormSubmit() {
+    async handleFormSubmit() {
         const customerData = {
             name: document.getElementById('customer-name').value.trim(),
             age: parseInt(document.getElementById('customer-age').value),
@@ -2566,16 +2567,16 @@ class GymApp {
             if (amount && parseFloat(amount) > 0) {
                 customerData.initialPayment = {
                     amount: parseFloat(amount),
-                    paymentMethod: document.getElementById('initial-payment-method').value,
+                    method: document.getElementById('initial-payment-method').value,
                     receiptNumber: document.getElementById('initial-payment-receipt').value.trim()
                 };
             }
         }
 
         if (this.editingCustomerId) {
-            this.updateCustomer(this.editingCustomerId, customerData);
+            await this.updateCustomer(this.editingCustomerId, customerData);
         } else {
-            this.addCustomer(customerData);
+            await this.addCustomer(customerData);
         }
 
         this.closeCustomerModal();
@@ -2715,7 +2716,12 @@ class GymApp {
                 this.currentView = targetView;
 
                 // Trigger specific view logic
-                if (targetView === 'analytics') setTimeout(() => this.renderCharts(), 50);
+                if (targetView === 'analytics') {
+                    setTimeout(() => {
+                        this.renderCharts();
+                        this.loadProfitMetrics();
+                    }, 50);
+                }
                 if (targetView === 'attendance') this.renderAttendance();
                 if (targetView === 'intelligence') this.loadIntelligenceData();
                 if (targetView === 'device-settings') {
@@ -2843,6 +2849,106 @@ class GymApp {
 
 
     // Chart Rendering
+    async loadProfitMetrics() {
+        try {
+            const response = await this.api.getProfitMetrics();
+            if (response && response.data) {
+                const { daily, weekly, monthly, yearly } = response.data;
+
+                // Helper to format currency
+                const formatCurrency = (amount) => {
+                    return new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: 'INR',
+                        maximumFractionDigits: 0
+                    }).format(amount);
+                };
+
+                // Update DOM elements
+                const updateElement = (id, value) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        this.animateValue(el, 0, value, 1000, true); // true for currency formatting
+                    }
+                };
+
+                updateElement('daily-profit', daily);
+                updateElement('weekly-profit', weekly);
+                updateElement('monthly-profit', monthly);
+                updateElement('yearly-profit', yearly); // Assuming there's a yearly-profit element, or total-profit
+            }
+        } catch (error) {
+            console.error('Failed to load profit metrics:', error);
+            this.showNotification('error', 'Error', 'Failed to load revenue analytics');
+        }
+    }
+
+    async loadIntelligenceData() {
+        try {
+            const response = await this.api.getBusinessHealth();
+            const data = response.data; // { health, attentionList, risks }
+
+            // 1. Update Health Score
+            const healthScore = data.health.score;
+            document.getElementById('health-score-val').textContent = `${healthScore}%`;
+            document.getElementById('health-score-circle').setAttribute('stroke-dasharray', `${healthScore}, 100`);
+
+            const statusEl = document.getElementById('health-status');
+            statusEl.textContent = data.health.status;
+            statusEl.className = 'health-status-badge'; // Reset
+            if (data.health.status === 'Healthy') statusEl.classList.add('status-good');
+            else if (data.health.status === 'Attention Needed') statusEl.classList.add('status-warning');
+            else statusEl.classList.add('status-critical');
+
+            document.getElementById('health-meta-text').textContent =
+                `${data.health.activeVisitors} active visitors out of ${data.health.activeMembers} active members`;
+
+            // 2. Risks
+            document.getElementById('churn-count').textContent = data.risks.churnCount;
+            document.getElementById('leakage-count').textContent = data.risks.leakageCount;
+
+            // 3. Attention List
+            const tbody = document.getElementById('attention-list-body');
+            tbody.innerHTML = '';
+
+            if (data.attentionList && data.attentionList.length > 0) {
+                data.attentionList.forEach(item => {
+                    const row = document.createElement('tr');
+
+                    let severityClass = 'severity-low';
+                    if (item.severity === 'CRITICAL') severityClass = 'severity-high';
+                    else if (item.severity === 'WARNING') severityClass = 'severity-medium';
+
+                    row.innerHTML = `
+                        <td>
+                            <div class="member-cell">
+                                <span class="member-name">${item.name}</span>
+                                <span class="member-id">${item.memberId}</span>
+                            </div>
+                        </td>
+                        <td>${item.issue}</td>
+                        <td>${item.detail}</td>
+                        <td><span class="severity-badge ${severityClass}">${item.severity}</span></td>
+                        <td>${item.action || '-'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            ✅ No critical alerts. All members seem healthy!
+                        </td>
+                    </tr>
+                `;
+            }
+
+        } catch (error) {
+            console.error('Failed to load intelligence data:', error);
+            this.showNotification('error', 'Intelligence Error', 'Failed to load insights');
+        }
+    }
+
     async renderCharts() {
         if (typeof Chart === 'undefined') {
             console.error('Chart.js is not loaded');

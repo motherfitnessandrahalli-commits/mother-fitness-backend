@@ -27,12 +27,36 @@ const getPayments = asyncHandler(async (req, res) => {
     const payments = await Payment.find(query)
         .sort({ paymentDate: -1 })
         .limit(parseInt(limit))
-        .skip((parseInt(page) - 1) * parseInt(limit));
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .lean();
+
+    // Populate customer details for each payment
+    const enrichedPayments = await Promise.all(payments.map(async (payment) => {
+        const customer = await Customer.findOne({ memberId: payment.memberId }).lean();
+
+        if (customer) {
+            return {
+                ...payment,
+                customerName: customer.name,
+                paymentMethod: payment.method, // Map 'method' to 'paymentMethod' for frontend
+                planType: customer.membership?.planName || customer.plan || 'N/A',
+                status: customer.paymentSummary?.paymentStatus || 'COMPLETED' // Use stored status
+            };
+        }
+
+        return {
+            ...payment,
+            customerName: 'Unknown',
+            paymentMethod: payment.method,
+            planType: 'N/A',
+            status: 'COMPLETED'
+        };
+    }));
 
     const total = await Payment.countDocuments(query);
 
     sendSuccess(res, 200, {
-        payments,
+        payments: enrichedPayments,
         pagination: {
             total,
             page: parseInt(page),
