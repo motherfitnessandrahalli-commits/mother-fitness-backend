@@ -136,6 +136,11 @@ customerSchema.virtual('plan').get(function () {
     return this.membership ? this.membership.planName : null;
 });
 
+// Virtual for top-level balance access
+customerSchema.virtual('balance').get(function () {
+    return this.paymentSummary ? this.paymentSummary.balance : 0;
+});
+
 // Pre-save: ID Generation and Password Hashing
 customerSchema.pre('save', async function (next) {
     if (this.isNew) {
