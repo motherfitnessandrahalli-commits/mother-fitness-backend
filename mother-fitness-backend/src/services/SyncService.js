@@ -163,7 +163,7 @@ class SyncService {
             }
         }
 
-        await this._addToQueue('CREATE_MEMBER', payload);
+        await this._addToQueue('MEMBER', payload, 'UPSERT');
     }
 
     /**
@@ -198,7 +198,7 @@ class SyncService {
             }
         }
 
-        await this._addToQueue('CREATE_PAYMENT', payload);
+        await this._addToQueue('PAYMENT', payload, 'UPSERT');
     }
 
     /**
@@ -226,7 +226,7 @@ class SyncService {
             }
         }
 
-        await this._addToQueue('CREATE_ANNOUNCEMENT', payload);
+        await this._addToQueue('ANNOUNCEMENT', payload, 'UPSERT');
     }
 
     /**
@@ -254,7 +254,7 @@ class SyncService {
             }
         }
 
-        await this._addToQueue('DELETE_ANNOUNCEMENT', payload);
+        await this._addToQueue('ANNOUNCEMENT', payload, 'DELETE');
     }
 
     /**
@@ -287,7 +287,7 @@ class SyncService {
             }
         }
 
-        await this._addToQueue('UPDATE_ANNOUNCEMENT', payload);
+        await this._addToQueue('ANNOUNCEMENT', payload, 'UPDATE');
     }
 
     /**
@@ -316,7 +316,7 @@ class SyncService {
             }
         }
 
-        await this._addToQueue('UPDATE_PAYMENT', payload);
+        await this._addToQueue('PAYMENT', payload, 'UPDATE');
     }
 
 
@@ -367,9 +367,14 @@ class SyncService {
         await this.cloudAnnouncement.create(payload);
     }
 
-    async _addToQueue(operation, payload) {
-        await SyncQueue.create({ operation, payload, status: 'pending' });
-        console.log(`📥 SyncService: Queued ${operation}`);
+    async _addToQueue(entity, payload, action = 'UPSERT') {
+        await SyncQueue.create({
+            entity: entity.toUpperCase(),
+            action: action.toUpperCase(),
+            payload,
+            status: 'PENDING'
+        });
+        console.log(`📥 SyncService: Queued ${entity} ${action}`);
     }
 
     async processQueue() {
@@ -377,7 +382,7 @@ class SyncService {
         this.isProcessing = true;
 
         try {
-            const pending = await SyncQueue.find({ status: 'pending' }).sort({ createdAt: 1 }).limit(10);
+            const pending = await SyncQueue.find({ status: 'PENDING' }).sort({ createdAt: 1 }).limit(10);
             if (pending.length === 0) {
                 this.isProcessing = false;
                 return;
@@ -387,35 +392,40 @@ class SyncService {
 
             for (const item of pending) {
                 try {
-                    if (item.operation === 'CREATE_MEMBER' || item.operation === 'UPDATE_MEMBER') {
-                        await this._pushMemberToCloud(item.payload);
-                    } else if (item.operation === 'CREATE_PAYMENT' || item.operation === 'create_payment') {
-                        await this._pushPaymentToCloud(item.payload);
-                    } else if (item.operation === 'UPDATE_PAYMENT') {
-                        await this._pushPaymentToCloud(item.payload);
-                    } else if (item.operation === 'CREATE_ANNOUNCEMENT') {
-                        await this._pushAnnouncementToCloud(item.payload);
-                    } else if (item.operation === 'UPDATE_ANNOUNCEMENT') {
-                        await this.cloudAnnouncement.updateOne(
-                            { localId: item.payload.localId },
-                            { $set: item.payload },
-                            { upsert: false }
-                        );
-                    } else if (item.operation === 'DELETE_ANNOUNCEMENT') {
-                        // ✅ Soft delete in cloud
-                        await this.cloudAnnouncement.updateOne(
-                            { localId: item.payload.localId },
-                            { $set: { isDeleted: true, deletedAt: new Date() } }
-                        );
+                    const { entity, action, payload } = item;
+
+                    if (entity === 'MEMBER' || entity === 'CUSTOMER') {
+                        if (action === 'UPSERT') {
+                            await this._pushMemberToCloud(payload);
+                        }
+                    } else if (entity === 'PAYMENT') {
+                        if (action === 'UPSERT') {
+                            await this._pushPaymentToCloud(payload);
+                        }
+                    } else if (entity === 'ANNOUNCEMENT') {
+                        if (action === 'UPSERT') {
+                            await this._pushAnnouncementToCloud(payload);
+                        } else if (action === 'DELETE') {
+                            await this.cloudAnnouncement.updateOne(
+                                { localId: payload.localId },
+                                { $set: { isDeleted: true, deletedAt: new Date() } }
+                            );
+                        } else if (action === 'UPDATE') {
+                            await this.cloudAnnouncement.updateOne(
+                                { localId: payload.localId },
+                                { $set: payload },
+                                { upsert: false }
+                            );
+                        }
                     }
 
-                    item.status = 'completed'; // Or delete
-                    await item.deleteOne(); // Remove processed
+                    item.status = 'SUCCESS';
+                    await item.deleteOne();
                 } catch (err) {
                     console.error(`❌ Queue Item ${item._id} failed:`, err.message);
-                    item.status = 'failed';
+                    item.status = 'FAILED';
                     item.lastError = err.message;
-                    item.attempts += 1;
+                    item.retryCount += 1;
                     await item.save();
                 }
             }

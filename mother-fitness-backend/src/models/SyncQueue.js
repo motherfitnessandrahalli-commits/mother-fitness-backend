@@ -31,6 +31,9 @@ const syncQueueSchema = new mongoose.Schema({
     },
     lastAttemptAt: {
         type: Date
+    },
+    lastError: {
+        type: String // To store failure reason
     }
 }, {
     timestamps: true
