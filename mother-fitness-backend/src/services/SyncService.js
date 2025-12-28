@@ -217,7 +217,8 @@ class SyncService {
             type: announcementData.type,
             startDate: announcementData.startDate,
             endDate: announcementData.endDate,
-            isActive: announcementData.isActive
+            isActive: announcementData.isActive,
+            isDeleted: announcementData.isDeleted || false
         };
 
         if (this.isConnected) {
@@ -366,10 +367,12 @@ class SyncService {
     }
 
     async _pushAnnouncementToCloud(payload) {
-        // Upsert based on title+message (fuzzy identity) or just create? 
-        // Best to just create a new one or update if localId exists in some meta field.
-        // For now, simpler to just create.
-        await this.cloudAnnouncement.create(payload);
+        // Upsert based on localId to avoid duplicates and ensure all fields sync
+        await this.cloudAnnouncement.findOneAndUpdate(
+            { localId: payload.localId },
+            { $set: payload },
+            { upsert: true, new: true }
+        );
     }
 
     async _addToQueue(entity, payload, action = 'UPSERT') {
