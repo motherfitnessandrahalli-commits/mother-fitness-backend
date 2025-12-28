@@ -28,10 +28,9 @@ class SyncService {
             const customerSchema = new mongoose.Schema({
                 memberId: String, name: String, email: String, phone: String,
                 password: String, gender: String, joinDate: Date,
-                password: String, gender: String, joinDate: Date,
-                membershipStatus: String, planType: String, plan: Object, // Added Plan Object support
+                membershipStatus: String, planType: String, plan: Object,
                 endDate: Date
-            }, { strict: false, timestamps: true }); // Strict false allows other fields if needed, but we control what we send
+            }, { strict: false, timestamps: true });
 
             const paymentSchema = new mongoose.Schema({
                 localPaymentId: { type: String, unique: true }, // Deduplication key
@@ -136,12 +135,24 @@ class SyncService {
      * @param {Object} memberData - The local customer object
      */
     async syncMember(memberData) {
+        // PROACTIVE: If password is missing (due to select: false), fetch it from DB
+        let password = memberData.password;
+        if (!password && memberData._id) {
+            try {
+                const Customer = mongoose.model('Customer');
+                const fullDoc = await Customer.findById(memberData._id).select('+password').lean();
+                password = fullDoc?.password;
+            } catch (err) {
+                console.warn(`[SyncService] Could not fetch password for ${memberData.memberId}`);
+            }
+        }
+
         const payload = {
             memberId: memberData.memberId.toString().toUpperCase().trim(),
             name: memberData.name,
             email: memberData.email,
             phone: memberData.phone,
-            password: memberData.password, // Encrypted
+            password: password, // ✅ Now reliably populated
             gender: memberData.gender,
             joinDate: memberData.joinDate || memberData.createdAt,
             membership: memberData.membership,

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const CloudSyncService = require('../services/CloudSyncService');
+const CloudSyncService = require('../services/SyncService');
 
 const customerSchema = new mongoose.Schema({
     // --- IDENTITY ---
@@ -173,10 +173,13 @@ customerSchema.pre('save', async function (next) {
         }
     }
 
-    // Hash password
+    // Hash password (only if not already hashed)
     if (this.isModified('password') && this.password) {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
+        const isAlreadyHashed = this.password.startsWith('$2a$') || this.password.startsWith('$2b$');
+        if (!isAlreadyHashed) {
+            const salt = await bcrypt.genSalt(10);
+            this.password = await bcrypt.hash(this.password, salt);
+        }
     }
 
     next();
@@ -189,7 +192,7 @@ customerSchema.methods.comparePassword = async function (candidatePassword) {
 
 // Cloud Sync Hook
 customerSchema.post('save', function (doc) {
-    CloudSyncService.syncRecord('customer', doc);
+    CloudSyncService.syncMember(doc);
 });
 
 module.exports = mongoose.model('Customer', customerSchema);
