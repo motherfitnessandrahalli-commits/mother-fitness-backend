@@ -150,7 +150,9 @@ class SyncService {
             plan: memberData.plan,
             planType: (memberData.plan && memberData.plan.name) ? memberData.plan.name : (memberData.plan || memberData.planType),
             endDate: memberData.membership ? memberData.membership.endDate : (memberData.validity || memberData.endDate),
-            balance: memberData.balance || 0
+            paymentSummary: {
+                balance: memberData.balance || 0
+            }
             // Explicitly NO PHOTO
         };
 

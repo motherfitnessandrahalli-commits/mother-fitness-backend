@@ -138,7 +138,12 @@ customerSchema.virtual('plan').get(function () {
 
 // Virtual for top-level balance access
 customerSchema.virtual('balance').get(function () {
-    return this.paymentSummary ? this.paymentSummary.balance : 0;
+    // Check nested paymentSummary first
+    if (this.paymentSummary && this.paymentSummary.balance !== undefined) {
+        return this.paymentSummary.balance;
+    }
+    // Fallback to top-level balance field (internal mongoose access to avoid conflict)
+    return this.get('balance', null, { virtuals: false }) || 0;
 });
 
 // Pre-save: ID Generation and Password Hashing
