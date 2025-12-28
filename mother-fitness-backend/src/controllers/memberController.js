@@ -183,7 +183,10 @@ const getMemberPayments = asyncHandler(async (req, res, next) => {
     const total = await Payment.countDocuments({ memberId: req.user.memberId });
 
     sendSuccess(res, 200, {
-        payments,
+        payments: payments.map(p => ({
+            ...p.toObject(),
+            paymentMethod: p.method || p.paymentMethod // Harmonize for frontend
+        })),
         total,
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / limit)

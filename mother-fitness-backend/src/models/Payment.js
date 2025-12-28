@@ -12,6 +12,11 @@ const paymentSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    receiptNumber: {
+        type: String,
+        unique: true,
+        sparse: true // Allow nulls for old records
+    },
 
     amount: {
         type: Number,

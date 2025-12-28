@@ -144,11 +144,12 @@ class SyncService {
             password: memberData.password, // Encrypted
             gender: memberData.gender,
             joinDate: memberData.joinDate || memberData.createdAt,
+            membership: memberData.membership,
             membershipStatus: memberData.membershipStatus || 'active',
             // Plan Logic: Support both New Object and Old String
             plan: memberData.plan,
             planType: (memberData.plan && memberData.plan.name) ? memberData.plan.name : (memberData.plan || memberData.planType),
-            endDate: memberData.validity || memberData.endDate,
+            endDate: memberData.membership ? memberData.membership.endDate : (memberData.validity || memberData.endDate),
             balance: memberData.balance || 0
             // Explicitly NO PHOTO
         };
@@ -178,10 +179,11 @@ class SyncService {
             memberId: memberData.memberId.toString().toUpperCase().trim(), // Key to find cloud user
             amount: paymentData.amount,
             paymentDate: paymentData.paymentDate,
-            paymentMethod: paymentData.paymentMethod,
+            paymentMethod: paymentData.method || paymentData.paymentMethod, // Handle both
             planType: paymentData.planType,
             status: paymentData.status,
             customerName: memberData.name,
+            receiptNumber: paymentData.receiptNumber, // Crucial for Member App
             // New Sync Fields
             totalAmount: paymentData.totalAmount || 0,
             paidAmount: paymentData.paidAmount || 0,
@@ -354,6 +356,7 @@ class SyncService {
             totalAmount: payload.totalAmount,
             paidAmount: payload.paidAmount,
             balance: payload.balance,
+            receiptNumber: payload.receiptNumber,
             debug_source: 'SYNC_SERVICE_V3'
         };
 

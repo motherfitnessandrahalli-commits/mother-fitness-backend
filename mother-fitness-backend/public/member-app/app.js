@@ -76,9 +76,8 @@ class MemberApp {
                 avatarDiv.innerHTML = '👤';
             }
 
-            // Calculate and display days remaining
-            // SINGLE SOURCE OF TRUTH: Use membership.endDate
-            const expiryDate = membership.endDate ? membership.endDate : this.memberProfile.validity;
+            // Improved Expiry Logic
+            const expiryDate = membership.endDate || this.memberProfile.endDate || this.memberProfile.validity;
             const status = this.calculateMembershipStatus(expiryDate);
 
             document.getElementById('daysRemaining').textContent = status.daysRemaining;
