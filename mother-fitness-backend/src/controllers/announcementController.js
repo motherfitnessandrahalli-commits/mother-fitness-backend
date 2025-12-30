@@ -34,7 +34,7 @@ exports.createAnnouncement = async (req, res, next) => {
 // @access  Private (Admin)
 exports.getAllAnnouncements = async (req, res, next) => {
     try {
-        const announcements = await Announcement.find().sort({ createdAt: -1 });
+        const announcements = await Announcement.find({ isDeleted: false }).sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,

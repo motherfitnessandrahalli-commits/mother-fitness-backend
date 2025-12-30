@@ -3,6 +3,7 @@ const http = require('http');
 const app = require('./src/app');
 const connectDB = require('./src/config/database');
 const logger = require('./src/config/logger');
+const SyncService = require('./src/services/SyncService');
 
 const { initSocket } = require('./src/config/socket');
 
@@ -21,16 +22,13 @@ const startServer = async () => {
         await connectDB();
 
         // Start server - bind to 0.0.0.0 for Render compatibility
-        server.listen(PORT, '0.0.0.0', () => {
+        server.listen(PORT, '0.0.0.0', async () => {
             logger.info(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
             logger.info(`📊 Health check: http://localhost:${PORT}/health`);
 
-            // Start Cloud Sync Worker (only on Local Master)
-            if (process.env.IS_CLOUD_MIRROR !== 'true' && process.env.CLOUD_API_URL) {
-                const CloudSyncService = require('./src/services/CloudSyncService');
-                CloudSyncService.startWorker();
-                logger.info('🔄 Cloud Sync Worker started');
-            }
+            // Start Cloud Sync Service (NEW Architecture)
+            await SyncService.init();
+            logger.info('🔄 Cloud Sync Service (V3) started');
         });
     } catch (error) {
         logger.error(`Failed to start server: ${error.message}`);

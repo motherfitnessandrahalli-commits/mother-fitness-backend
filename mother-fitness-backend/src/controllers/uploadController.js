@@ -1,6 +1,11 @@
 const path = require('path');
 const fs = require('fs');
-const sharp = require('sharp');
+let sharp;
+try {
+    sharp = require('sharp');
+} catch (e) {
+    console.error('⚠️ [Warning] sharp module failed to load. Image processing will be disabled.');
+}
 const { AppError, asyncHandler, sendSuccess } = require('../utils/errorHandler');
 const { generateUniqueId } = require('../utils/helpers');
 
@@ -19,15 +24,21 @@ const uploadPhoto = asyncHandler(async (req, res, next) => {
     const filepath = path.join(uploadDir, filename);
 
     try {
-        // Process image with Sharp
-        await sharp(req.file.buffer)
-            .resize(500, 500, { // Resize to 500x500 square
-                fit: 'cover',
-                position: 'center'
-            })
-            .toFormat('webp')
-            .webp({ quality: 80 }) // Compress quality
-            .toFile(filepath);
+        if (!sharp) {
+            // Fallback: Save original file without processing if sharp is missing
+            fs.writeFileSync(filepath, req.file.buffer);
+            console.warn('⚠️ Saved file without processing because sharp is missing');
+        } else {
+            // Process image with Sharp
+            await sharp(req.file.buffer)
+                .resize(500, 500, { // Resize to 500x500 square
+                    fit: 'cover',
+                    position: 'center'
+                })
+                .toFormat('webp')
+                .webp({ quality: 80 }) // Compress quality
+                .toFile(filepath);
+        }
 
         // Construct public URL
         const fileUrl = `/uploads/${filename}`;
@@ -35,7 +46,7 @@ const uploadPhoto = asyncHandler(async (req, res, next) => {
         sendSuccess(res, 201, {
             filename,
             path: fileUrl,
-            mimetype: 'image/webp',
+            mimetype: sharp ? 'image/webp' : req.file.mimetype,
             size: req.file.size
         }, 'Photo uploaded successfully');
     } catch (error) {

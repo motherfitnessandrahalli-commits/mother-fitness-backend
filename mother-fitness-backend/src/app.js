@@ -14,7 +14,7 @@ const xss = require('xss-clean');
 const hpp = require('hpp');
 
 // Initialize Cloud Sync
-SyncService.init();
+// --- Sync Service Initialization moved to server.js for proper sequence ---
 
 // CORS configuration - MUST be before helmet
 app.use(cors({

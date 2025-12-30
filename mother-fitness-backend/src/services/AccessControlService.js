@@ -196,13 +196,14 @@ class AccessControlService {
         await customer.save();
 
         // Create Attendance Log
+        const logTime = eventData.timestamp || now;
         await Attendance.create({
             customerId: customer._id,
             memberId: customer.memberId, // Required field
             customerName: customer.name,
-            date: todayStr,
-            time: getLocalTimeString(),
-            timestamp: now,
+            date: getLocalDateString(logTime),
+            time: getLocalTimeString(logTime),
+            timestamp: logTime,
             membershipStatus: customer.membershipStatus,
             type: 'IN',
             direction: 'IN', // Required by schema
@@ -244,13 +245,14 @@ class AccessControlService {
         await customer.save();
 
         // Create Attendance Log
+        const logTime = eventData.timestamp || now;
         await Attendance.create({
             customerId: customer._id,
             memberId: customer.memberId, // Required field
             customerName: customer.name,
-            date: todayStr,
-            time: getLocalTimeString(),
-            timestamp: now,
+            date: getLocalDateString(logTime),
+            time: getLocalTimeString(logTime),
+            timestamp: logTime,
             membershipStatus: customer.membershipStatus, // Use actual status field, not derived 'status' if possible, or fallback
             type: 'OUT',
             direction: 'OUT', // Required by schema

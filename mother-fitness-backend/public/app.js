@@ -239,8 +239,7 @@ class GymApp {
             console.log('🎬 TRIGGERING MAIN UI RENDERING...');
             this.biometricSystem.showResult(data);
 
-            // Testing confirmation as requested
-            alert("ACCESS " + (data.decision || 'GRANTED'));
+            // alert("ACCESS " + (data.decision || 'GRANTED')); // Removed debug popup
 
             // Explicitly update diagnosis status if element exists
             const statusBox = document.getElementById('scan-status');
@@ -376,8 +375,7 @@ class GymApp {
             // TRIGGER THE ACTUAL UI (Ensures Link 4 is tested)
             this.biometricSystem.showResult(data);
 
-            // Testing confirmation as requested
-            alert("ACCESS " + (data.decision || 'ALLOW'));
+            // alert("ACCESS " + (data.decision || 'ALLOW')); // Removed debug popup
         } catch (error) {
             console.error('❌ MOCK ERROR:', error);
             if (statusBox) {

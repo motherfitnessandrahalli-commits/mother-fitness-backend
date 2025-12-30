@@ -14,54 +14,68 @@ let expressServer = null;
 let tray = null;
 const PORT = process.env.PORT || 5000;
 
-// Check if a port is in use
-function isPortAvailable(port) {
-    return new Promise((resolve) => {
-        const server = http.createServer();
-        server.once('error', () => resolve(false));
-        server.once('listening', () => {
-            server.close();
-            resolve(true);
-        });
-        server.listen(port);
-    });
-}
+const mongoose = require('mongoose');
+const SyncService = require('./src/services/SyncService');
 
 // Start the Express backend server
 async function startBackendServer() {
+    let retryCount = 0;
+    const maxRetries = 5;
+    const retryDelay = 2000;
+
+    // Connect to MongoDB once
     try {
-        // Connect to MongoDB
         await connectDB();
         logger.info('✅ Connected to MongoDB');
+    } catch (dbErr) {
+        logger.error(`❌ MongoDB connection failed: ${dbErr.message}`);
+        throw dbErr;
+    }
 
-        // Check if port is available
-        const portAvailable = await isPortAvailable(PORT);
-        if (!portAvailable) {
-            logger.error(`❌ Port ${PORT} is already in use`);
-            throw new Error(`Port ${PORT} is already in use. Please close other instances or change the PORT in .env file.`);
+    while (retryCount < maxRetries) {
+        try {
+            // Create HTTP server
+            const server = http.createServer(expressApp);
+
+            // Initialize Socket.io
+            initSocket(server);
+
+            // Attempt to start server
+            return await new Promise((resolve, reject) => {
+                expressServer = server.listen(PORT, '0.0.0.0', async () => {
+                    logger.info(`✅ Backend server running on http://localhost:${PORT}`);
+
+                    try {
+                        // Initialize Cloud Sync Service
+                        await SyncService.init();
+                        logger.info('🔄 Cloud Sync Service (V3) started inside Electron');
+                        resolve();
+                    } catch (syncErr) {
+                        logger.error(`❌ Failed to init SyncService: ${syncErr.message}`);
+                        resolve(); // Continue even if sync service fails
+                    }
+                });
+
+                server.on('error', (error) => {
+                    if (error.code === 'EADDRINUSE') {
+                        logger.warn(`⚠️ Port ${PORT} busy, retry ${retryCount + 1}/${maxRetries} in ${retryDelay / 1000}s...`);
+                        server.close();
+                        reject(error);
+                    } else {
+                        logger.error(`❌ Server error: ${error.message}`);
+                        reject(error);
+                    }
+                });
+            });
+        } catch (error) {
+            if (error.code === 'EADDRINUSE' && retryCount < maxRetries - 1) {
+                retryCount++;
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            } else {
+                logger.error(`❌ Final Backend server error: ${error.message}`);
+                throw error;
+            }
         }
-
-        // Create HTTP server
-        const server = http.createServer(expressApp);
-
-        // Initialize Socket.io
-        initSocket(server);
-
-        // Start server
-        return new Promise((resolve, reject) => {
-            expressServer = server.listen(PORT, '0.0.0.0', () => {
-                logger.info(`✅ Backend server running on http://localhost:${PORT}`);
-                resolve();
-            });
-
-            expressServer.on('error', (error) => {
-                logger.error(`❌ Failed to start backend server: ${error.message}`);
-                reject(error);
-            });
-        });
-    } catch (error) {
-        logger.error(`❌ Backend server error: ${error.message}`);
-        throw error;
     }
 }
 

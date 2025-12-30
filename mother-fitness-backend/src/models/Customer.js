@@ -138,12 +138,17 @@ customerSchema.virtual('plan').get(function () {
 
 // Virtual for top-level balance access
 customerSchema.virtual('balance').get(function () {
-    // Check nested paymentSummary first
-    if (this.paymentSummary && this.paymentSummary.balance !== undefined) {
+    // 1. Check nested paymentSummary (Primary Source)
+    if (this.paymentSummary && typeof this.paymentSummary.balance === 'number') {
         return this.paymentSummary.balance;
     }
-    // Fallback to top-level balance field (internal mongoose access to avoid conflict)
-    return this.get('balance', null, { virtuals: false }) || 0;
+
+    // 2. Safe access to raw document field if it exists (Legacy Support)
+    // We use this.getValue or this._doc to avoid triggering the virtual again
+    const rawBalance = this._doc ? this._doc.balance : undefined;
+    if (typeof rawBalance === 'number') return rawBalance;
+
+    return 0;
 });
 
 // Pre-save: ID Generation and Password Hashing

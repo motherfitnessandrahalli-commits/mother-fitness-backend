@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { SyncQueue, Customer, Payment } = require('../models');
+// Models will be lazy-loaded to avoid circular dependencies
 
 // Singleton service to manage secondary Cloud connection
 class SyncService {
@@ -52,7 +52,6 @@ class SyncService {
             this.cloudAnnouncement = this.cloudConnection.model('Announcement', announcementSchema);
 
             // Start Queue Processor
-            // Start Queue Processor
             setInterval(() => this.processQueue(), 5000); // Check queue every 5 seconds (Battle-Tested Rule)
 
             // Start Cloud Polling (B -> A Sync)
@@ -62,6 +61,7 @@ class SyncService {
         } catch (error) {
             console.error('❌ SyncService Connection Error:', error.message);
             this.isConnected = false;
+            // Don't re-throw, just let the app run without sync
         }
     }
 
@@ -101,6 +101,7 @@ class SyncService {
     async _syncToLocal(cloudMem) {
         try {
             // Find Local Member
+            const Customer = mongoose.model('Customer');
             const localMem = await Customer.findOne({ memberId: cloudMem.memberId });
             if (!localMem) return; // Don't create local members from cloud (security/process choice)
 
@@ -186,6 +187,18 @@ class SyncService {
      * @param {Object} memberData - Needed to find Cloud ID
      */
     async syncPayment(paymentData, memberData) {
+        // PROACTIVE: Ensure memberData has all required info
+        if (!memberData || !memberData.memberId) {
+            try {
+                const Customer = mongoose.model('Customer');
+                memberData = await Customer.findOne({ memberId: paymentData.memberId });
+            } catch (err) {
+                console.warn(`[SyncService] Could not fetch customer for payment sync`);
+            }
+        }
+
+        if (!memberData) return;
+
         const payload = {
             localPaymentId: paymentData._id,
             paymentId: paymentData.paymentId, // Map the unique human-readable ID
@@ -387,6 +400,7 @@ class SyncService {
     }
 
     async _addToQueue(entity, payload, action = 'UPSERT') {
+        const SyncQueue = mongoose.model('SyncQueue');
         await SyncQueue.create({
             entity: entity.toUpperCase(),
             action: action.toUpperCase(),
@@ -401,6 +415,7 @@ class SyncService {
         this.isProcessing = true;
 
         try {
+            const SyncQueue = mongoose.model('SyncQueue');
             const pending = await SyncQueue.find({ status: 'PENDING' }).sort({ createdAt: 1 }).limit(10);
             if (pending.length === 0) {
                 this.isProcessing = false;
